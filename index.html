@@ -31,26 +31,36 @@ body { background:var(--bg); color:var(--text); font-family:var(--fm); margin:0;
     body { flex-direction: column; overflow-y: auto; height: auto; padding-bottom: env(safe-area-inset-bottom); padding-top: env(safe-area-inset-top); }
     .sidebar { width: 100% !important; border-right: none !important; border-bottom: 1px solid var(--border); height: auto !important; padding: 16px !important; }
     .sbox { padding: 13px; }
+    /* 레퍼런스·저작권 → 사이드바 맨 아래 */
+    .ref-box { order: 100 !important; }
+    .copyright { order: 101 !important; }
     #map { height: 400px !important; min-height: 400px; }
     .content-row { flex-direction: column !important; }
-    .intake-panel { border-left: none !important; border-top: 1px solid var(--border); padding: 16px !important; }
+    /* 고도 차트는 JS로 지도 바로 아래로 이동 — 여기선 스타일만 */
+    #chart-area { height: 130px !important; padding: 8px 14px !important; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+    .intake-panel { border-left: none !important; border-top: none !important; padding: 16px !important; }
     .top-bar { height: auto !important; flex-wrap: wrap; padding: 10px 14px !important; gap: 12px !important; font-size: 11px !important; }
-    input, select { font-size: 16px !important; padding: 10px !important; } /* 16px prevents iOS auto-zoom */
+    input, select { font-size: 16px !important; padding: 10px !important; }
     input[type=range] { height: 28px; }
     input[type=file] { font-size: 13px !important; padding: 10px !important; }
     .btn-generate { padding: 20px !important; font-size: 19px !important; }
     .btn-csv { padding: 13px !important; font-size: 13px !important; }
-    .intake-item { font-size: 15px !important; padding: 14px 0 !important; }
     .pre-val { font-size: 22px !important; }
     .cutoff-info { padding: 14px !important; }
-    #chart-area { height: 130px !important; padding: 8px 14px !important; }
     .refa { font-size: 11px !important; padding: 6px 0; opacity: 0.9; }
     .kinetic-logo { font-size: 24px !important; }
+    /* 1KM Tactical Plan → 2열 컴팩트 그리드 */
+    .intake-scroll { overflow-y: visible !important; }
+    #intakePanel { display: grid !important; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .intake-item { flex-direction: column !important; padding: 10px 8px !important; background: var(--surf2); border-radius: 8px; border-bottom: none !important; font-size: 13px !important; gap: 4px; }
+    .intake-item span:first-child { color: var(--muted); font-size: 11px; font-weight: 700; }
+    .intake-item span:last-child { font-size: 12px !important; }
 }
 @media (max-width: 400px) {
     .sidebar { padding: 12px !important; gap: 10px !important; }
     .preview-grid { grid-template-columns: 1fr !important; }
     #map { height: 340px !important; }
+    #intakePanel { grid-template-columns: 1fr 1fr; }
 }
 
 /* SIDEBAR LAYOUT */
@@ -439,6 +449,19 @@ document.getElementById('calcBtn').onclick = () => {
 
 updateSweatUI(5);
 updateSaltUI(1);
+
+/* Mobile layout: move chart-area between map and intake-panel */
+function applyMobileLayout() {
+  if(window.innerWidth <= 768) {
+    const contentRow = document.querySelector('.content-row');
+    const chartArea  = document.getElementById('chart-area');
+    const intakePanel = document.querySelector('.intake-panel');
+    if(contentRow && chartArea && intakePanel) {
+      contentRow.insertBefore(chartArea, intakePanel);
+    }
+  }
+}
+applyMobileLayout();
 
 /* Fix Leaflet tile rendering on mobile orientation change / resize */
 window.addEventListener('resize', () => { if(lMap) setTimeout(()=>lMap.invalidateSize(), 200); });
