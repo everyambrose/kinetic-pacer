@@ -2,8 +2,18 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>KINETIC PACER v9.3 — Tactical Export</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
+<meta name="theme-color" content="#05070a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Kinetic Pacer">
+<meta name="description" content="GPX 기반 마라톤·트레일 러닝 뉴트리션 전략 시뮬레이터. 목표 시간과 코스 난이도를 입력하면 탄수화물·수분·전해질 보급 지점을 자동 계산합니다.">
+<meta property="og:title" content="KINETIC PACER — Marathon Nutrition Strategy">
+<meta property="og:description" content="GPX + 목표 시간 입력 → 젤·수분·염분 보급 타이밍 자동 계산">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+<title>KINETIC PACER v9.4 — Marathon Nutrition Strategy</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@800&family=IBM+Plex+Mono:wght@400;500;600&family=Barlow+Condensed:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <style>
@@ -18,11 +28,29 @@
 body { background:var(--bg); color:var(--text); font-family:var(--fm); margin:0; overflow-x:hidden; display:flex; height:100vh; }
 
 @media (max-width: 768px) {
-    body { flex-direction: column; overflow-y: auto; height: auto; }
-    .sidebar { width: 100% !important; border-right: none !important; border-bottom: 1px solid var(--border); height: auto !important; }
-    #map { height: 450px !important; }
+    body { flex-direction: column; overflow-y: auto; height: auto; padding-bottom: env(safe-area-inset-bottom); padding-top: env(safe-area-inset-top); }
+    .sidebar { width: 100% !important; border-right: none !important; border-bottom: 1px solid var(--border); height: auto !important; padding: 16px !important; }
+    .sbox { padding: 13px; }
+    #map { height: 400px !important; }
     .content-row { flex-direction: column !important; }
-    .intake-panel { border-left: none !important; border-top: 1px solid var(--border); }
+    .intake-panel { border-left: none !important; border-top: 1px solid var(--border); padding: 16px !important; }
+    .top-bar { height: auto !important; flex-wrap: wrap; padding: 10px 14px !important; gap: 12px !important; font-size: 11px !important; }
+    input, select { font-size: 16px !important; padding: 10px !important; } /* 16px prevents iOS auto-zoom */
+    input[type=range] { height: 28px; }
+    input[type=file] { font-size: 13px !important; padding: 10px !important; }
+    .btn-generate { padding: 20px !important; font-size: 19px !important; }
+    .btn-csv { padding: 13px !important; font-size: 13px !important; }
+    .intake-item { font-size: 15px !important; padding: 14px 0 !important; }
+    .pre-val { font-size: 22px !important; }
+    .cutoff-info { padding: 14px !important; }
+    #chart-area { height: 130px !important; padding: 8px 14px !important; }
+    .refa { font-size: 11px !important; padding: 6px 0; opacity: 0.9; }
+    .kinetic-logo { font-size: 24px !important; }
+}
+@media (max-width: 400px) {
+    .sidebar { padding: 12px !important; gap: 10px !important; }
+    .preview-grid { grid-template-columns: 1fr !important; }
+    #map { height: 340px !important; }
 }
 
 /* SIDEBAR LAYOUT */
@@ -106,7 +134,7 @@ input[type=range] { accent-color:var(--green); cursor:pointer; }
 <div class="sidebar">
   <div style="margin-bottom:5px;">
     <span class="kinetic-logo">KINETIC PACER</span>
-    <span style="color:var(--green); font-family:var(--fd); font-weight:700; font-size:18px; margin-left:5px;">v9.3</span>
+    <span style="color:var(--green); font-family:var(--fd); font-weight:700; font-size:18px; margin-left:5px;">v9.4</span>
   </div>
   
   <div class="sbox"><div class="stitle"><span class="stnum">01</span> GPX COURSE SOURCE</div><input type="file" id="fi" accept=".gpx" style="font-size:10px;"></div>
