@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>KINETIC PACER v9.3 — Tactical Export</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@800&family=IBM+Plex+Mono:wght@400;500;600&family=Barlow+Condensed:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+:root {
+  --bg:#05070a; --surf:#0c1017; --surf2:#161b22; --border:#2a3140;
+  --text:#c9d1d9; --muted:#6e7a88;
+  --green:#3ddc84; --orange:#f97316; --blue:#38bdf8;
+  --purple:#a855f7; --red:#fb7185;
+  --fd:'Barlow Condensed',sans-serif; --fm:'IBM Plex Mono',monospace;
+  --icon-scale: 1;
+}
+body { background:var(--bg); color:var(--text); font-family:var(--fm); margin:0; overflow-x:hidden; display:flex; height:100vh; }
+
+@media (max-width: 768px) {
+    body { flex-direction: column; overflow-y: auto; height: auto; }
+    .sidebar { width: 100% !important; border-right: none !important; border-bottom: 1px solid var(--border); height: auto !important; }
+    #map { height: 450px !important; }
+    .content-row { flex-direction: column !important; }
+    .intake-panel { border-left: none !important; border-top: 1px solid var(--border); }
+}
+
+/* SIDEBAR LAYOUT */
+.sidebar { width:340px; border-right:1px solid var(--border); padding:20px; display:flex; flex-direction:column; gap:14px; background:var(--surf); z-index:100; overflow-y:auto; flex-shrink:0; box-sizing: border-box; }
+.sbox { background:var(--surf2); border:1px solid var(--border); border-radius:10px; padding:15px; display:flex; flex-direction:column; gap:10px; box-sizing: border-box; }
+.stitle { font-family:var(--fd); font-size:11px; letter-spacing:1.5px; color:var(--green); text-transform:uppercase; font-weight:700; border-bottom:1px solid var(--border); padding-bottom:6px; display:flex; align-items:center; gap:8px; }
+.stnum { color:var(--muted); font-size:10px; }
+
+.preview-grid { display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-top:5px; }
+.p-item { background:var(--bg); border:1px solid var(--border); padding:10px; border-radius:8px; text-align:center; }
+.p-label { font-size:9px; color:var(--muted); text-transform:uppercase; }
+.p-val { font-size:15px; color:var(--green); font-weight:700; font-family:var(--fd); }
+
+.fl { font-size:10px; color:var(--muted); margin-bottom:3px; display:block; }
+input, select { background:var(--bg); border:1px solid var(--border); border-radius:6px; padding:8px; color:#fff; font-family:var(--fm); font-size:14px; text-align:center; width:100%; box-sizing:border-box; outline:none; }
+input:focus { border-color:var(--green); }
+input[type=range] { accent-color:var(--green); cursor:pointer; }
+
+/* MAIN VIEW & TOP BAR */
+.main-view { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+.top-bar { height:55px; border-bottom:1px solid var(--border); display:flex; align-items:center; padding:0 18px; gap:25px; background:var(--surf); font-size:12px; font-weight:700; flex-shrink:0; }
+.top-bar em { color:var(--green); font-style:normal; margin-left:6px; }
+
+.content-row { display:flex; flex:1; min-height:0; }
+#map { flex:7.5; background:#000; }
+.intake-panel { flex:2.5; background:var(--surf); overflow-y:auto; padding:20px; border-left:1px solid var(--border); display:flex; flex-direction:column; }
+.intake-scroll { flex:1; overflow-y:auto; margin-bottom:10px; }
+.intake-item { display:flex; justify-content:space-between; padding:12px 0; border-bottom:1px solid rgba(255,255,255,0.08); font-size:17px; font-weight:600; color:#fff; }
+
+/* PRE-LOADING BOX */
+.preloading-box { background:rgba(61, 220, 132, 0.1); border:1.5px solid var(--green); border-radius:10px; padding:15px; margin-bottom:20px; position:relative; overflow:hidden; }
+.preloading-box::after { content:'PRE-START'; position:absolute; right:-10px; top:10px; font-family:var(--fd); font-size:40px; color:var(--green); opacity:0.05; transform:rotate(-15deg); }
+.pre-title { font-family:var(--fd); font-size:13px; color:var(--green); letter-spacing:1px; margin-bottom:8px; font-weight:800; display:flex; align-items:center; gap:6px; }
+.pre-val { font-size:24px; font-weight:800; color:#fff; font-family:var(--fd); }
+.pre-sub { font-size:11px; color:var(--muted); margin-top:4px; line-height:1.4; }
+
+/* CUTOFF INFO BOX */
+.cutoff-info { background:rgba(168, 85, 247, 0.08); border:1px solid var(--purple); border-radius:8px; padding:14px; margin-bottom:15px; font-size:13px; color:var(--text); line-height:1.6; }
+.cutoff-info b { color:var(--purple); font-family:var(--fd); letter-spacing:0.5px; font-size:14px; }
+.cutoff-info .cutoff-desc { font-size:12px; color:var(--text); margin-top:6px; display:block; }
+.cutoff-info .cutoff-detail { font-size:12px; color:var(--muted); margin-top:8px; display:block; line-height:1.7; }
+
+/* CSV BUTTONS */
+.csv-group { display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-top:10px; }
+.btn-csv { background:var(--surf2); border:1px solid var(--border); color:var(--text); padding:10px; border-radius:6px; font-family:var(--fd); font-size:12px; cursor:pointer; font-weight:600; transition:0.2s; }
+.btn-csv:hover { border-color:var(--green); color:var(--green); }
+
+#chart-area { height:150px; border-top:1px solid var(--border); background:var(--surf); padding:10px 20px; box-sizing:border-box; flex-shrink:0; }
+
+.btn-generate { background:var(--green); color:#000; border:none; padding:18px; font-weight:800; font-family:var(--fd); font-size:18px; letter-spacing:1px; cursor:pointer; border-radius:8px; transition:0.2s; width: 100%; display: block; margin: 5px 0; }
+.btn-generate:hover { background: #5eeea0; transform: translateY(-1px); }
+
+.ref-box { background:transparent; border:1px solid var(--border); border-radius:8px; padding:12px; margin-top:10px; }
+.refa { text-decoration:none; font-size:10px; opacity:.8; display:block; margin-bottom:5px; }
+.ref-energy   { color:var(--orange); }
+.ref-hydrate  { color:var(--blue); }
+.ref-salt     { color:var(--purple); }
+.ref-general  { color:var(--green); }
+
+.copyright { padding-top: 15px; margin-top: 15px; text-align: center; border-top: 1px solid var(--border); }
+
+/* 로고 전용 스타일 */
+.kinetic-logo {
+    font-family: 'Inter', sans-serif;
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -1px;
+    text-transform: uppercase;
+    background: linear-gradient(90deg, #f97316 0%, #3ddc84 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    display: inline-block;
+}
+
+.nutrition-icon div { transform: scale(var(--icon-scale)); transform-origin: center; cursor:pointer; }
+.icon-badge { font-size:8px; color:#fff; padding:1px 3px; border-radius:2px; font-weight:700; display:block; margin-top:-5px; box-shadow:0 2px 4px #000; }
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+  <div style="margin-bottom:5px;">
+    <span class="kinetic-logo">KINETIC PACER</span>
+    <span style="color:var(--green); font-family:var(--fd); font-weight:700; font-size:18px; margin-left:5px;">v9.3</span>
+  </div>
+  
+  <div class="sbox"><div class="stitle"><span class="stnum">01</span> GPX COURSE SOURCE</div><input type="file" id="fi" accept=".gpx" style="font-size:10px;"></div>
+
+  <div class="sbox"><div class="stitle"><span class="stnum">02</span> TARGET FINISH TIME</div><div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:6px;">
+    <div><label class="fl">HRS</label><input type="number" id="th" value="00" oninput="liveUpdate()"></div>
+    <div><label class="fl">MIN</label><input type="number" id="tm" value="00" oninput="liveUpdate()"></div>
+    <div><label class="fl">SEC</label><input type="number" id="ts" value="00" oninput="liveUpdate()"></div>
+  </div></div>
+
+  <div class="sbox"><div class="stitle"><span class="stnum">03</span> RACE ENVIRONMENT</div><div style="display:grid; grid-template-columns: 1fr 1.5fr; gap:8px;">
+    <div><label class="fl">TEMP(°C)</label><input type="number" id="temp" value="00" oninput="liveUpdate()"></div>
+    <div><label class="fl">HUMID(%)</label><input type="number" id="humid" value="00" oninput="liveUpdate()"></div>
+  </div></div>
+
+  <div class="sbox"><div class="stitle"><span class="stnum">04</span> BODY PHYSIOLOGY</div>
+    <div style="margin-bottom:8px;"><label class="fl">BODY WEIGHT (KG)</label><input type="number" id="weight" value="60" oninput="liveUpdate()"></div>
+    <div><label class="fl">SWEAT RATE (LV.<span id="sL">5</span>)</label><input type="range" id="sweat_lvl" min="1" max="10" value="5" oninput="updateSweatUI(this.value); liveUpdate()">
+    <div id="sT" style="font-size:9px; color:var(--muted); margin-top:2px;">Moderate Sweat</div></div>
+    <div style="margin-top:10px; border-top:1px solid var(--border); padding-top:10px;">
+      <label class="fl">SALTINESS (LV.<span id="vS">1</span>)</label><input type="range" id="salt_lvl" min="1" max="10" value="1" oninput="updateSaltUI(this.value); liveUpdate()">
+      <div id="salt_desc" style="font-size:9px; color:var(--muted); margin-top:2px;">Hypotonic</div>
+    </div>
+  </div>
+
+  <div class="sbox"><div class="stitle"><span class="stnum">05</span> REALISTIC INTERVALS (KM)</div><div style="display:grid; grid-template-columns:repeat(3,1fr); gap:6px;">
+    <div><label class="fl">GEL</label><input type="number" id="gel_gap" value="0.0"></div>
+    <div><label class="fl">WAT</label><input type="number" id="water_gap" value="0.0"></div>
+    <div><label class="fl">SAL</label><input type="number" id="salt_gap" value="0.0"></div>
+  </div></div>
+
+  <div class="sbox"><div class="stitle"><span class="stnum">06</span> PLANNED INTAKE (MAX CAP)</div><div class="preview-grid">
+    <div class="p-item"><div class="p-label">⚡ CARB</div><div class="p-val" id="preCarb">0g</div></div>
+    <div class="p-item"><div class="p-label">💧 WATER</div><div class="p-val" id="preWater">0ml</div></div>
+    <div class="p-item" style="grid-column: span 2;"><div class="p-label">💊 SALT (Na⁺)</div><div class="p-val" id="preSalt" style="color:var(--purple)">0mg</div></div>
+  </div></div>
+
+  <button id="calcBtn" class="btn-generate">⚡ GENERATE STRATEGY</button>
+
+  <div class="ref-box">
+    <span style="font-family:var(--fd);font-size:10px;color:var(--muted);margin-bottom:8px;display:block">※ STRATEGY REFERENCES</span>
+    <a href="https://pubmed.ncbi.nlm.nih.gov/11997380/" target="_blank" class="refa ref-energy">• Minetti (2002): Energy Cost by Gradient</a>
+    <a href="https://pubmed.ncbi.nlm.nih.gov/24791916/" target="_blank" class="refa ref-energy">• Jeukendrup (2014): CHO Absorption & Timing</a>
+    <a href="https://www.mysportscience.com/" target="_blank" class="refa ref-energy">• Jeukendrup (2011): Multi-Transportable CHO</a>
+    <a href="https://pubmed.ncbi.nlm.nih.gov/17921463/" target="_blank" class="refa ref-hydrate">• Sawka (2007): ACSM Hydration Position</a>
+    <a href="https://pubmed.ncbi.nlm.nih.gov/29209579/" target="_blank" class="refa ref-salt">• Baker (2017): Sweat Na⁺ Concentration</a>
+    <a href="https://pubmed.ncbi.nlm.nih.gov/26891166/" target="_blank" class="refa ref-general">• Thomas/ACSM (2016): Nutrition & Performance</a>
+  </div>
+
+  <div class="copyright">
+    <div class="kinetic-logo" style="font-size:14px; letter-spacing:0.5px;">KINETIC PACER</div>
+    <div style="font-size:9px;color:var(--muted);margin-top:4px">© 2026 @everyambrose_ ALL RIGHTS RESERVED.</div>
+  </div>
+</div>
+
+<div class="main-view">
+  <div class="top-bar">
+    <div>DISTANCE <em id="statDist">0.0km</em></div>
+    <div>TOTAL GAIN <em id="statElev">0m</em></div>
+    <div>LAST CUTOFF <em id="statCutoff" style="color:var(--purple)">—</em></div>
+  </div>
+  <div class="content-row">
+    <div id="map" data-zoom="13"></div>
+    <div class="intake-panel">
+      <div id="preloadingUI" class="preloading-box" style="display:none;">
+        <div class="pre-title">🚩 PRE-START LOADING TARGET</div>
+        <div class="pre-val" id="valPreloading">0g CARB</div>
+        <div class="pre-sub">완주를 위해 레이스 전 체내 글리코겐 탱크를 이만큼 더 채워야 합니다.</div>
+      </div>
+      <div class="cutoff-info" id="cutoffInfo" style="display:none;">
+        <b>⏱ ABSORPTION CUTOFF</b>
+        <span class="cutoff-desc">마지막 보급 후 흡수되어 피니쉬에 기여할 수 있는 시점까지만 배치됩니다.</span>
+        <span id="cutoffDetail" class="cutoff-detail"></span>
+      </div>
+      <span style="font-size:16px; color:var(--green); font-weight:800; border-bottom:2px solid var(--green); padding-bottom:8px; display:block; margin-bottom:15px; text-transform:uppercase;">📊 1KM TACTICAL PLAN</span>
+      <div class="intake-scroll" id="intakePanel"></div>
+      <div class="csv-group">
+        <button class="btn-csv" onclick="exportCSV('10km')">📥 EXPORT (10KM)</button>
+        <button class="btn-csv" onclick="exportCSV('terrain')">📥 EXPORT (TERRAIN)</button>
+      </div>
+    </div>
+  </div>
+  <div id="chart-area"><canvas id="elevationChart"></canvas></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+let gPts=[], lMap=null, markerGroup=null, polyline=null, chart=null, selectedIndex=-1, avgGapFactor=1.0;
+let lastResultData = [];
+
+/* ===== ABSORPTION TIMING CONSTANTS (minutes) =====
+   Based on:
+   - Jeukendrup 2014 (PMID 24791916): CHO gels effective within 5-15 min,
+     meaningful contribution requires ~25 min absorption window.
+   - Sawka 2007 (ACSM Position Stand): Water absorbed within 10-15 min post-ingestion.
+   - Baker 2017 (PMID 29209579): Sodium uptake via SGLT1 co-transporter ~15-20 min.
+=================================================== */
+const CUTOFF_GEL_MIN   = 25;   // gel must be taken >=25 min before finish
+const CUTOFF_WATER_MIN = 15;   // water must be taken >=15 min before finish
+const CUTOFF_SALT_MIN  = 20;   // salt must be taken >=20 min before finish
+
+const vLine = { id:'vLine', afterDraw:(c)=>{ if(selectedIndex!==-1){ const ctx=c.ctx; const x=c.scales.x.getPixelForValue(selectedIndex); ctx.save(); ctx.beginPath(); ctx.moveTo(x,c.scales.y.top); ctx.lineTo(x,c.scales.y.bottom); ctx.lineWidth=3; ctx.strokeStyle='#ff4d4d'; ctx.stroke(); ctx.restore(); } } };
+Chart.register(vLine);
+
+function getGapF(g) { const i=Math.max(-0.45, Math.min(0.45, isFinite(g)?g:0)); return Math.max((155.4*Math.pow(i,5)-30.4*Math.pow(i,4)-43.3*Math.pow(i,3)+46.3*Math.pow(i,2)+19.5*i+3.6)/3.6, 0.8); }
+
+/* Sweat sodium concentration (mg/L) by saltiness level (Baker 2017 ranges) */
+function getSweatNaConc(saltL) {
+  return 300 + (saltL - 1) * (1500 / 9);  // LV.1=300, LV.5=967, LV.10=1800
+}
+
+function updateSweatUI(v) {
+  sL.innerText=v;
+  const m=[["Very Dry","Hardly any sweat."],["Light Sheen","A bit sweaty."],["Moderate","Consistent sweating."],["Heavily Sweaty","Clothes sticking."],["Drenched","Dripping constant."],["Extreme","Severe loss."]];
+  let idx=Math.floor((v-1)/1.8); sT.innerText=m[idx][0];
+}
+
+function updateSaltUI(v) {
+  vS.innerText=v;
+  const m=["Hypotonic","Normal","Salty","Hyper-salty"];
+  let idx=Math.min(3, Math.floor((v-1)/2.6)); salt_desc.innerText=m[idx];
+}
+
+function liveUpdate() {
+    const h=+th.value||0, m=+tm.value||0, s=+ts.value||0, tV=+temp.value, sweatL=+sweat_lvl.value, saltL=+salt_lvl.value, wt=+weight.value||60;
+    const tSec=(h*3600)+(m*60)+s, tHr=tSec/3600, dist=parseFloat(statDist.innerText)||42.195;
+    
+    /* If target time not set, clear dependent UI and exit gracefully */
+    if(tSec===0) {
+        preloadingUI.style.display='none';
+        preCarb.innerText='0g';
+        preWater.innerText='0ml';
+        preSalt.innerText='0mg';
+        return;
+    }
+
+    const pace=tSec/60/dist, weightFactor=wt/60;  /* base reference 60kg */
+    const intensityF = pace > 10 ? Math.pow(10/pace, 0.6) : 1.0;
+    
+    gel_gap.value = Math.max(3.0, Math.min(35 / pace, 6.5)).toFixed(1);
+    const waterPerHour = (500 + Math.max(0,(tV-15)*15)) * (0.5+sweatL*0.1) * intensityF * weightFactor;
+    let calculatedWaterGap = (250 / waterPerHour) * (60 / pace);
+    water_gap.value = Math.max(2.5, Math.min(calculatedWaterGap, 6.0)).toFixed(1);
+    /* Salt interval scales inversely with saltiness level.
+       Rationale: higher sweat [Na⁺] → higher hourly Na loss → more frequent replacement needed.
+       LV.1 (300 mg/L) = 2.4× water_gap (sparse)
+       LV.5 (~900 mg/L) = 1.6× water_gap (standard)
+       LV.10 (1800 mg/L) = 0.6× water_gap (frequent)  */
+    const saltMult = 2.4 - (saltL - 1) * (1.8 / 9);
+    salt_gap.value = Math.max(2.0, Math.min(parseFloat(water_gap.value) * saltMult, 15.0)).toFixed(1);
+
+    const demandRate = 65 * avgGapFactor * weightFactor; 
+    const absorptionRate = Math.min(demandRate, 85); 
+    const sweatNaConc = getSweatNaConc(saltL);
+    
+    preCarb.innerText=Math.round(absorptionRate * tHr)+"g";
+    preWater.innerText=Math.round(tHr * waterPerHour)+"ml";
+    /* Total Na replacement = total sweat loss × sweat [Na] × 0.75 recovery factor */
+    preSalt.innerText=Math.round((tHr * waterPerHour / 1000) * sweatNaConc * 0.75)+"mg";
+
+    /* Pre-loading deficit check — threshold scaled by weight so lighter runners also see it when applicable */
+    const threshold = Math.max(15, 20 * weightFactor);
+    const deficit = Math.max(0, Math.round((demandRate - absorptionRate) * tHr));
+    if(deficit > threshold) {
+        preloadingUI.style.display = 'block';
+        valPreloading.innerText = deficit + "g CARB";
+    } else {
+        preloadingUI.style.display = 'none';
+    }
+}
+
+function exportCSV(mode) {
+    if(!lastResultData.length) return alert("전략 생성을 먼저 완료해주세요.");
+    let csvData = [["Section", "Terrain", "Carbs(g)", "Water(ml)", "Salt(mg)", "Ascent(m)"]];
+    if(mode === '10km') {
+        for(let k=0; k<lastResultData.length; k+=10) {
+            let chunk = lastResultData.slice(k, k+10);
+            let sumC=0, sumW=0, sumS=0, sumA=0;
+            chunk.forEach(d => { sumC+=d.c; sumW+=d.w; sumS+=d.s; sumA+=d.a; });
+            csvData.push([`${k}-${k+chunk.length}km`, "Mixed", Math.round(sumC), Math.round(sumW), Math.round(sumS), Math.round(sumA)]);
+        }
+    } else if(mode === 'terrain') {
+        let currentType = lastResultData[0].type;
+        let startKm = 0, sumC=0, sumW=0, sumS=0, sumA=0;
+        lastResultData.forEach((d, i) => {
+            if(d.type !== currentType || i === lastResultData.length - 1) {
+                csvData.push([`${startKm}-${d.km}km`, currentType, Math.round(sumC), Math.round(sumW), Math.round(sumS), Math.round(sumA)]);
+                currentType = d.type; startKm = d.km; sumC=0; sumW=0; sumS=0; sumA=0;
+            }
+            sumC+=d.c; sumW+=d.w; sumS+=d.s; sumA+=d.a;
+        });
+    }
+    let csvContent = "data:text/csv;charset=utf-8,\uFEFF" + csvData.map(e => e.join(",")).join("\n");
+    let link = document.createElement("a");
+    link.setAttribute("href", encodeURI(csvContent));
+    link.setAttribute("download", `KineticPacer_Strategy_${mode}.csv`);
+    document.body.appendChild(link); link.click();
+}
+
+function getD(a,b){ const R=6371e3, r=Math.PI/180; const x=Math.sin((b.lat-a.lat)*r/2)**2+Math.cos(a.lat*r)*Math.cos(b.lat*r)*Math.sin((b.lon-a.lon)*r/2)**2; return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x)); }
+
+document.getElementById('fi').onchange = e => {
+  const r=new FileReader();
+  r.onload = ev => {
+    const pts=[...(new DOMParser().parseFromString(ev.target.result,'text/xml')).querySelectorAll('trkpt')];
+    let d=0, g=0, pr=null, tGf=0; gPts=[];
+    pts.forEach((p,i)=>{
+      const pt={lat:+p.getAttribute('lat'),lon:+p.getAttribute('lon'),ele:+p.querySelector('ele')?.textContent||0};
+      if(pr){ const sd=getD(pr,pt); d+=sd; if(pt.ele>pr.ele)g+=pt.ele-pr.ele; if(sd>0)tGf+=getGapF((pt.ele-pr.ele)/sd); }
+      pt.distKm=d/1000; pt.cumGain=g; pt.idx=i; gPts.push(pt); pr=pt;
+    });
+    avgGapFactor=tGf/(pts.length-1)||1.0; statDist.innerText=(d/1000).toFixed(1)+'km'; statElev.innerText=Math.round(g)+'m'; renderChart(); liveUpdate();
+  };
+  r.readAsText(e.target.files[0]);
+};
+
+function renderChart(){
+  if(chart) chart.destroy();
+  chart=new Chart(elevationChart,{type:'line',data:{labels:gPts.map(p=>p.distKm.toFixed(1)),datasets:[{data:gPts.map(p=>p.ele),borderColor:'#3ddc84',fill:true,backgroundColor:'rgba(61,220,132,0.1)',pointRadius:0,borderWidth:2}]},options:{maintainAspectRatio:false,scales:{x:{display:false},y:{ticks:{color:'#6e7a88',font:{size:9}},grid:{color:'rgba(42,49,64,0.3)'}}},plugins:{legend:{display:false},tooltip:{enabled:false}}}});
+}
+
+function mkIcon(e,b,v,u,o=0){ return L.divIcon({className:'',html:`<div class="nutrition-icon" style="transform:translate(calc(-50% + ${o}px),-100%)"><div style="text-align:center; transform:scale(var(--icon-scale))">${e}<b class="icon-badge" style="background:${b}">${v}${u}</b></div></div>`}); }
+
+document.getElementById('calcBtn').onclick = () => {
+  if(!gPts.length) return alert("GPX REQUIRED");
+  const h=+th.value||0, m=+tm.value||0, s=+ts.value||0, tSec=h*3600+m*60+s, tHr=tSec/3600, wt=+weight.value||60;
+  if(tSec===0) return alert("TARGET FINISH TIME REQUIRED");
+  const gG=+gel_gap.value, wG=+water_gap.value, sG=+salt_gap.value, tV=+temp.value, sweatL=+sweat_lvl.value, saltL=+salt_lvl.value;
+  const totalK=gPts[gPts.length-1].distKm, weightFactor=wt/60;
+  const paceMinPerKm = tSec / 60 / totalK;
+  const waterRate=(500 + Math.max(0,(tV-15)*15)) * (0.5+sweatL*0.1) * (paceMinPerKm > 10 ? Math.pow(10/paceMinPerKm, 0.6) : 1.0) * weightFactor;
+  const sweatNaConc = getSweatNaConc(saltL);
+
+  /* Compute cutoff distances (km) from finish, based on absorption time requirements */
+  const cutoffGelKm   = (CUTOFF_GEL_MIN   / paceMinPerKm);
+  const cutoffWaterKm = (CUTOFF_WATER_MIN / paceMinPerKm);
+  const cutoffSaltKm  = (CUTOFF_SALT_MIN  / paceMinPerKm);
+
+  if(!lMap){ lMap=L.map('map',{zoomControl:false}).setView([gPts[0].lat, gPts[0].lon],13); L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(lMap); lMap.on('zoom',()=>{ const sc=lMap.getZoom()<=13?1:lMap.getZoom()===14?1.4:lMap.getZoom()===15?1.8:2.4; document.documentElement.style.setProperty('--icon-scale',sc); }); }
+  if(markerGroup) markerGroup.clearLayers(); else markerGroup=L.layerGroup().addTo(lMap);
+  if(polyline) lMap.removeLayer(polyline); polyline=L.polyline(gPts.map(p=>[p.lat,p.lon]),{color:'#3ddc84',weight:3.5}).addTo(lMap);
+
+  L.marker([gPts[0].lat, gPts[0].lon], {icon: mkIcon('🚩', 'var(--green)', 'LOAD', '')}).addTo(markerGroup);
+  L.marker([gPts[gPts.length-1].lat, gPts[gPts.length-1].lon], {icon: mkIcon('🏁', 'var(--red)', 'FINISH', '')}).addTo(markerGroup);
+
+  let lGel=0.1, lWat=0.1, lSal=0.1, aC=0, aW=0, kAC=0, kAW=0, kAA=0, kAS=0;
+  let lastGelKm=0, lastWatKm=0, lastSalKm=0;
+  intakePanel.innerHTML=''; lastResultData = [];
+  
+  for(let i=1; i<gPts.length; i++){
+    const p=gPts[i], pr=gPts[i-1], d=p.distKm-pr.distKm; if(d<=0)continue;
+    const gf=getGapF((p.ele-pr.ele)/(d*1000));
+    const dC = Math.min(65 * gf * weightFactor, 85) * (tSec/(totalK*3600)) * d;
+    const dW = waterRate * (tSec/(totalK*3600)) * d;
+    aC+=dC; aW+=dW; kAC+=dC; kAW+=dW; if(p.ele>pr.ele) kAA+=p.ele-pr.ele;
+    
+    const remainingKm = totalK - p.distKm;
+    const remainingMin = remainingKm * paceMinPerKm;
+    
+    const makeM=(icon,color,val,title,unit,offset)=>{ const m=L.marker([p.lat,p.lon],{icon:mkIcon(icon,color,Math.round(val),unit,offset)}); m.on('click',()=>{selectedIndex=i;chart.update();}); m.bindPopup(`<div style="color:#000; font-size:12px;"><b>${title}</b><br>DIST: ${p.distKm.toFixed(1)}km | REMAIN: ${remainingMin.toFixed(0)}min<br>TAKE: <b>${Math.round(val)}${unit}</b></div>`).addTo(markerGroup); };
+    
+    /* GEL: requires >=25 min remaining for absorption */
+    if(p.distKm>=lGel+gG && remainingMin >= CUTOFF_GEL_MIN && gG>0){
+        makeM('⚡','var(--orange)',aC,'GEL','g',0); aC=0; lGel=p.distKm; lastGelKm=p.distKm;
+    }
+    /* WATER: requires >=15 min remaining */
+    if(p.distKm>=lWat+wG && remainingMin >= CUTOFF_WATER_MIN && wG>0){
+        makeM('💧','var(--blue)',aW,'WATER','ml',35); aW=0; lWat=p.distKm; lastWatKm=p.distKm;
+    }
+    /* SALT: requires >=20 min remaining, dose calculated from sweat loss since last intake */
+    if(p.distKm>=lSal+sG && remainingMin >= CUTOFF_SALT_MIN && sG>0){
+        const distSinceLastSalt = p.distKm - lSal;
+        const intervalHrSalt = (distSinceLastSalt * paceMinPerKm) / 60;
+        const sweatLostMl = waterRate * intervalHrSalt;
+        const naDose = Math.round(Math.max(50, Math.min(800, (sweatLostMl / 1000) * sweatNaConc * 0.75)));
+        makeM('💊','var(--purple)', naDose, 'SALT','mg',-35);
+        kAS += naDose;
+        lSal=p.distKm; lastSalKm=p.distKm;
+    }
+    
+    if(Math.floor(p.distKm)>Math.floor(pr.distKm)){
+        const terrain = (p.ele - gPts[Math.max(0, i-20)].ele) > 5 ? "UPHILL" : (p.ele - gPts[Math.max(0, i-20)].ele) < -5 ? "DOWN" : "FLAT";
+        intakePanel.innerHTML+=`<div class="intake-item"><span>${Math.floor(p.distKm)}km</span><span style="color:var(--green)">⚡${Math.round(kAC)}g | 💧${Math.round(kAW)}ml</span></div>`;
+        lastResultData.push({km: Math.floor(p.distKm), c: kAC, w: kAW, s: kAS, a: kAA, type: terrain});
+        kAC=0; kAW=0; kAA=0; kAS=0;
+    }
+  }
+  
+  /* Show cutoff info box */
+  cutoffInfo.style.display = 'block';
+  cutoffDetail.innerHTML = `
+    <div>🔶 마지막 젤: <b style="color:var(--orange)">${lastGelKm.toFixed(1)}km</b> <span style="color:var(--muted);font-size:11px">(피니쉬 -${(totalK-lastGelKm).toFixed(1)}km)</span></div>
+    <div>🔷 마지막 물: <b style="color:var(--blue)">${lastWatKm.toFixed(1)}km</b> <span style="color:var(--muted);font-size:11px">(피니쉬 -${(totalK-lastWatKm).toFixed(1)}km)</span></div>
+    <div>🟣 마지막 염분: <b style="color:var(--purple)">${lastSalKm.toFixed(1)}km</b> <span style="color:var(--muted);font-size:11px">(피니쉬 -${(totalK-lastSalKm).toFixed(1)}km)</span></div>
+  `;
+  statCutoff.innerText = `GEL ${(totalK-lastGelKm).toFixed(1)}km before`;
+  
+  lMap.fitBounds(polyline.getBounds());
+  liveUpdate();  /* refresh Pre-Start Loading UI with latest avgGapFactor */
+};
+
+updateSweatUI(5);
+updateSaltUI(1);
+</script>
+</body>
+</html>
