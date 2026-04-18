@@ -31,7 +31,7 @@ body { background:var(--bg); color:var(--text); font-family:var(--fm); margin:0;
     body { flex-direction: column; overflow-y: auto; height: auto; padding-bottom: env(safe-area-inset-bottom); padding-top: env(safe-area-inset-top); }
     .sidebar { width: 100% !important; border-right: none !important; border-bottom: 1px solid var(--border); height: auto !important; padding: 16px !important; }
     .sbox { padding: 13px; }
-    #map { height: 400px !important; }
+    #map { height: 400px !important; min-height: 400px; }
     .content-row { flex-direction: column !important; }
     .intake-panel { border-left: none !important; border-top: 1px solid var(--border); padding: 16px !important; }
     .top-bar { height: auto !important; flex-wrap: wrap; padding: 10px 14px !important; gap: 12px !important; font-size: 11px !important; }
@@ -374,7 +374,7 @@ document.getElementById('calcBtn').onclick = () => {
   const cutoffWaterKm = (CUTOFF_WATER_MIN / paceMinPerKm);
   const cutoffSaltKm  = (CUTOFF_SALT_MIN  / paceMinPerKm);
 
-  if(!lMap){ lMap=L.map('map',{zoomControl:false}).setView([gPts[0].lat, gPts[0].lon],13); L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(lMap); lMap.on('zoom',()=>{ const sc=lMap.getZoom()<=13?1:lMap.getZoom()===14?1.4:lMap.getZoom()===15?1.8:2.4; document.documentElement.style.setProperty('--icon-scale',sc); }); }
+  if(!lMap){ lMap=L.map('map',{zoomControl:false}).setView([gPts[0].lat, gPts[0].lon],13); L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(lMap); lMap.on('zoom',()=>{ const sc=lMap.getZoom()<=13?1:lMap.getZoom()===14?1.4:lMap.getZoom()===15?1.8:2.4; document.documentElement.style.setProperty('--icon-scale',sc); }); setTimeout(()=>lMap.invalidateSize(),300); }
   if(markerGroup) markerGroup.clearLayers(); else markerGroup=L.layerGroup().addTo(lMap);
   if(polyline) lMap.removeLayer(polyline); polyline=L.polyline(gPts.map(p=>[p.lat,p.lon]),{color:'#3ddc84',weight:3.5}).addTo(lMap);
 
@@ -439,6 +439,10 @@ document.getElementById('calcBtn').onclick = () => {
 
 updateSweatUI(5);
 updateSaltUI(1);
+
+/* Fix Leaflet tile rendering on mobile orientation change / resize */
+window.addEventListener('resize', () => { if(lMap) setTimeout(()=>lMap.invalidateSize(), 200); });
+window.addEventListener('orientationchange', () => { if(lMap) setTimeout(()=>lMap.invalidateSize(), 400); });
 </script>
 </body>
 </html>
