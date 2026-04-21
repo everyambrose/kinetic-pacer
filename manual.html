@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#05070a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="description" content="KINETIC PACER 사용자 매뉴얼 — GPX 기반 마라톤·트레일 러닝 뉴트리션 전략 시뮬레이터">
+<title>KINETIC PACER — User Manual</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@800;900&family=IBM+Plex+Mono:wght@400;500;600&family=Barlow+Condensed:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#05070a; --surf:#0c1017; --surf2:#161b22; --surf3:#1e2530;
+  --border:#2a3140; --border2:#3a4555;
+  --text:#c9d1d9; --muted:#6e7a88; --muted2:#4a5568;
+  --green:#3ddc84; --orange:#f97316; --blue:#38bdf8;
+  --purple:#a855f7; --red:#fb7185; --yellow:#fbbf24;
+  --fd:'Barlow Condensed',sans-serif;
+  --fm:'IBM Plex Mono',monospace;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--fm);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── HEADER ── */
+.header {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(5,7,10,0.92);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 24px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.header-logo {
+  font-family: 'Inter', sans-serif;
+  font-size: 20px; font-weight: 900; letter-spacing: -0.5px;
+  text-transform: uppercase;
+  background: linear-gradient(90deg, #f97316 0%, #3ddc84 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.header-tag {
+  font-family: var(--fd); font-size: 11px; font-weight: 700;
+  letter-spacing: 2px; color: var(--muted); text-transform: uppercase;
+}
+.back-btn {
+  font-family: var(--fd); font-size: 13px; font-weight: 700;
+  color: var(--green); text-decoration: none;
+  border: 1px solid var(--green); padding: 6px 14px; border-radius: 5px;
+  transition: 0.2s; letter-spacing: 0.5px;
+}
+.back-btn:hover { background: var(--green); color: #000; }
+
+/* ── HERO ── */
+.hero {
+  padding: 64px 24px 48px;
+  max-width: 860px; margin: 0 auto;
+  border-bottom: 1px solid var(--border);
+}
+.hero-eyebrow {
+  font-family: var(--fd); font-size: 11px; font-weight: 700;
+  letter-spacing: 3px; color: var(--orange); text-transform: uppercase;
+  margin-bottom: 16px;
+}
+.hero-title {
+  font-family: 'Inter', sans-serif;
+  font-size: clamp(36px, 8vw, 64px);
+  font-weight: 900; letter-spacing: -2px; line-height: 1;
+  text-transform: uppercase; color: #fff;
+  margin-bottom: 20px;
+}
+.hero-title span { color: var(--green); }
+.hero-desc {
+  font-size: 14px; color: var(--muted); line-height: 1.8;
+  max-width: 600px;
+}
+.hero-chips {
+  display: flex; flex-wrap: wrap; gap: 8px; margin-top: 24px;
+}
+.chip {
+  font-family: var(--fd); font-size: 11px; font-weight: 700;
+  padding: 4px 10px; border-radius: 4px; letter-spacing: 0.5px;
+  border: 1px solid;
+}
+.chip-green { color: var(--green); border-color: var(--green); background: rgba(61,220,132,0.08); }
+.chip-orange { color: var(--orange); border-color: var(--orange); background: rgba(249,115,22,0.08); }
+.chip-blue { color: var(--blue); border-color: var(--blue); background: rgba(56,189,248,0.08); }
+.chip-purple { color: var(--purple); border-color: var(--purple); background: rgba(168,85,247,0.08); }
+
+/* ── NAV (TOC) ── */
+.toc-wrap {
+  background: var(--surf);
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  position: sticky; top: 53px; z-index: 90;
+}
+.toc {
+  display: flex; gap: 0;
+  max-width: 860px; margin: 0 auto;
+  padding: 0 24px;
+  white-space: nowrap;
+}
+.toc-item {
+  font-family: var(--fd); font-size: 12px; font-weight: 700;
+  letter-spacing: 1px; text-transform: uppercase;
+  color: var(--muted); text-decoration: none;
+  padding: 14px 16px; border-bottom: 2px solid transparent;
+  transition: 0.2s;
+}
+.toc-item:hover { color: var(--green); border-bottom-color: var(--green); }
+
+/* ── MAIN CONTENT ── */
+.main { max-width: 860px; margin: 0 auto; padding: 0 24px 80px; }
+
+/* ── SECTION ── */
+.section { padding: 56px 0; border-bottom: 1px solid var(--border); }
+.section:last-child { border-bottom: none; }
+
+.sec-label {
+  font-family: var(--fd); font-size: 10px; font-weight: 700;
+  letter-spacing: 3px; color: var(--muted); text-transform: uppercase;
+  margin-bottom: 8px; display: flex; align-items: center; gap: 10px;
+}
+.sec-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+.sec-num { color: var(--green); }
+
+.sec-title {
+  font-family: 'Inter', sans-serif;
+  font-size: clamp(24px, 5vw, 36px);
+  font-weight: 900; letter-spacing: -1px;
+  text-transform: uppercase; color: #fff;
+  margin-bottom: 24px; line-height: 1.1;
+}
+
+/* ── STEP CARDS ── */
+.steps { display: flex; flex-direction: column; gap: 16px; margin-top: 8px; }
+.step-card {
+  background: var(--surf2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px 22px;
+  display: flex; gap: 20px; align-items: flex-start;
+  transition: border-color 0.2s;
+}
+.step-card:hover { border-color: var(--border2); }
+.step-num {
+  font-family: var(--fd); font-size: 28px; font-weight: 800;
+  color: var(--green); line-height: 1; flex-shrink: 0;
+  width: 36px;
+}
+.step-content {}
+.step-title {
+  font-family: var(--fd); font-size: 16px; font-weight: 800;
+  color: #fff; letter-spacing: 0.5px; margin-bottom: 6px;
+}
+.step-desc {
+  font-size: 12px; color: var(--muted); line-height: 1.8;
+}
+.step-desc b { color: var(--text); }
+.step-desc code {
+  background: var(--surf); border: 1px solid var(--border);
+  border-radius: 4px; padding: 1px 6px;
+  color: var(--green); font-size: 11px;
+}
+
+/* ── PARAM TABLE ── */
+.param-table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+.param-table th {
+  font-family: var(--fd); font-size: 10px; font-weight: 700;
+  letter-spacing: 1.5px; color: var(--muted); text-transform: uppercase;
+  text-align: left; padding: 10px 14px;
+  border-bottom: 2px solid var(--border);
+}
+.param-table td {
+  font-size: 12px; padding: 14px 14px;
+  border-bottom: 1px solid rgba(42,49,64,0.6);
+  vertical-align: top; line-height: 1.7;
+}
+.param-table tr:last-child td { border-bottom: none; }
+.param-table tr:hover td { background: rgba(255,255,255,0.02); }
+.param-name {
+  font-family: var(--fd); font-size: 14px; font-weight: 800;
+  color: #fff; white-space: nowrap;
+}
+.param-range { color: var(--muted); font-size: 11px; margin-top: 3px; }
+.param-desc { color: var(--text); }
+.param-tip {
+  font-size: 11px; color: var(--muted); margin-top: 5px;
+  padding-left: 10px; border-left: 2px solid var(--border);
+}
+
+/* ── INFO BOXES ── */
+.info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 16px; }
+.info-box {
+  background: var(--surf2); border: 1px solid var(--border);
+  border-radius: 10px; padding: 18px;
+}
+.info-box-title {
+  font-family: var(--fd); font-size: 12px; font-weight: 800;
+  letter-spacing: 1px; margin-bottom: 8px;
+  display: flex; align-items: center; gap: 8px;
+}
+.info-box-body { font-size: 12px; color: var(--muted); line-height: 1.8; }
+.info-box-body b { color: var(--text); }
+.ib-green .info-box-title { color: var(--green); }
+.ib-orange .info-box-title { color: var(--orange); }
+.ib-blue .info-box-title { color: var(--blue); }
+.ib-purple .info-box-title { color: var(--purple); }
+.ib-green { border-color: rgba(61,220,132,0.25); }
+.ib-orange { border-color: rgba(249,115,22,0.25); }
+.ib-blue { border-color: rgba(56,189,248,0.25); }
+.ib-purple { border-color: rgba(168,85,247,0.25); }
+
+/* ── CALLOUT ── */
+.callout {
+  border-radius: 10px; padding: 16px 18px;
+  display: flex; gap: 14px; align-items: flex-start;
+  margin: 20px 0;
+}
+.callout-warn { background: rgba(251,113,133,0.08); border: 1px solid rgba(251,113,133,0.3); }
+.callout-tip  { background: rgba(61,220,132,0.08);  border: 1px solid rgba(61,220,132,0.3); }
+.callout-info { background: rgba(56,189,248,0.08);  border: 1px solid rgba(56,189,248,0.3); }
+.callout-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+.callout-text { font-size: 12px; line-height: 1.8; color: var(--text); }
+.callout-text b { color: #fff; }
+
+/* ── SCIENCE BLOCK ── */
+.science-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-top: 16px; }
+.sci-card {
+  background: var(--surf2); border: 1px solid var(--border);
+  border-radius: 10px; padding: 16px;
+}
+.sci-tag {
+  font-family: var(--fd); font-size: 9px; font-weight: 700;
+  letter-spacing: 1.5px; padding: 2px 7px; border-radius: 3px;
+  display: inline-block; margin-bottom: 10px;
+}
+.sci-tag-e { background: var(--orange); color: #000; }
+.sci-tag-h { background: var(--blue); color: #000; }
+.sci-tag-s { background: var(--purple); color: #fff; }
+.sci-tag-g { background: var(--green); color: #000; }
+.sci-author { font-family: var(--fd); font-size: 14px; font-weight: 800; color: #fff; margin-bottom: 4px; }
+.sci-title { font-size: 11px; color: var(--muted); line-height: 1.5; }
+
+/* ── OUTPUT TABLE ── */
+.output-row {
+  display: flex; align-items: center; gap: 16px;
+  padding: 16px 0; border-bottom: 1px solid rgba(42,49,64,0.5);
+}
+.output-row:last-child { border-bottom: none; }
+.output-icon { font-size: 24px; width: 36px; text-align: center; flex-shrink: 0; }
+.output-label {
+  font-family: var(--fd); font-size: 14px; font-weight: 800;
+  color: #fff; min-width: 120px;
+}
+.output-desc { font-size: 12px; color: var(--muted); line-height: 1.7; flex: 1; }
+.output-desc b { color: var(--text); }
+
+/* ── FAQ ── */
+.faq-item {
+  border: 1px solid var(--border); border-radius: 10px;
+  overflow: hidden; margin-bottom: 10px;
+}
+.faq-q {
+  padding: 16px 18px;
+  font-family: var(--fd); font-size: 15px; font-weight: 700;
+  color: #fff; cursor: pointer;
+  display: flex; justify-content: space-between; align-items: center;
+  background: var(--surf2);
+  transition: background 0.2s;
+}
+.faq-q:hover { background: var(--surf3); }
+.faq-q::after { content: '+'; color: var(--green); font-size: 20px; font-weight: 300; }
+.faq-q.open::after { content: '−'; }
+.faq-a {
+  display: none; padding: 16px 18px;
+  font-size: 12px; color: var(--muted); line-height: 1.9;
+  border-top: 1px solid var(--border);
+  background: var(--surf);
+}
+.faq-a.open { display: block; }
+.faq-a b { color: var(--text); }
+
+/* ── FOOTER ── */
+.footer {
+  border-top: 1px solid var(--border);
+  padding: 32px 24px;
+  text-align: center;
+}
+.footer-logo {
+  font-family: 'Inter', sans-serif;
+  font-size: 16px; font-weight: 900; letter-spacing: -0.5px;
+  text-transform: uppercase;
+  background: linear-gradient(90deg, #f97316 0%, #3ddc84 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  display: inline-block; margin-bottom: 8px;
+}
+.footer-copy { font-size: 10px; color: var(--muted2); }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 768px) {
+  .hero { padding: 40px 16px 32px; }
+  .main { padding: 0 16px 60px; }
+  .toc { padding: 0 12px; }
+  .toc-item { padding: 12px 10px; font-size: 11px; }
+  .info-grid { grid-template-columns: 1fr; }
+  .science-grid { grid-template-columns: 1fr 1fr; }
+  .step-card { flex-direction: row; }
+  .param-table { font-size: 11px; }
+  .param-table th, .param-table td { padding: 10px 8px; }
+  .header { padding: 12px 16px; }
+  .header-logo { font-size: 16px; }
+  .header-tag { display: none; }
+}
+@media (max-width: 480px) {
+  .science-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <div>
+    <div class="header-logo">Kinetic Pacer</div>
+  </div>
+  <span class="header-tag">User Manual</span>
+  <a href="index.html" class="back-btn">← APP</a>
+</header>
+
+<!-- TOC -->
+<nav class="toc-wrap">
+  <div class="toc">
+    <a class="toc-item" href="#overview">Overview</a>
+    <a class="toc-item" href="#quickstart">Quick Start</a>
+    <a class="toc-item" href="#inputs">Inputs</a>
+    <a class="toc-item" href="#outputs">Outputs</a>
+    <a class="toc-item" href="#science">Science</a>
+    <a class="toc-item" href="#faq">FAQ</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-eyebrow">사용자 매뉴얼 · v9.4</div>
+  <h1 class="hero-title">KINETIC<br><span>PACER</span></h1>
+  <p class="hero-desc">
+    GPX 코스 파일과 목표 완주 시간을 입력하면, 실제 경사도와 체력 데이터를 기반으로
+    탄수화물·수분·전해질 보급 타이밍을 자동 계산하는 마라톤·트레일러닝 뉴트리션 전략 시뮬레이터입니다.
+  </p>
+  <div class="hero-chips">
+    <span class="chip chip-green">⚡ 젤 전략</span>
+    <span class="chip chip-blue">💧 수분 계획</span>
+    <span class="chip chip-purple">💊 전해질 타이밍</span>
+    <span class="chip chip-orange">🗺 GPX 코스 분석</span>
+  </div>
+</div>
+
+<main class="main">
+
+  <!-- OVERVIEW -->
+  <section class="section" id="overview">
+    <div class="sec-label"><span class="sec-num">00</span> OVERVIEW</div>
+    <h2 class="sec-title">무엇을 하는<br>도구인가?</h2>
+
+    <div class="info-grid">
+      <div class="info-box ib-green">
+        <div class="info-box-title">⚡ 에너지 전략</div>
+        <div class="info-box-body">
+          코스 경사도(Minetti 2002)와 체중을 기반으로 km당 소모 칼로리를 계산합니다.
+          <b>흡수 한계(85g/hr)</b>를 넘지 않는 범위에서 젤 보급 지점을 배치합니다.
+        </div>
+      </div>
+      <div class="info-box ib-blue">
+        <div class="info-box-title">💧 수분 전략</div>
+        <div class="info-box-body">
+          기온·습도·땀 분비율·체중을 종합해 <b>시간당 수분 손실량</b>을 추정하고, 250ml 단위 음수 지점을 자동 배치합니다.
+        </div>
+      </div>
+      <div class="info-box ib-purple">
+        <div class="info-box-title">💊 전해질 전략</div>
+        <div class="info-box-body">
+          땀의 나트륨 농도(Baker 2017, LV.1~10)와 땀 손실량을 곱해 <b>1회 필요 Na⁺ mg</b>을 계산합니다. 소금 체질일수록 보급 간격이 좁아집니다.
+        </div>
+      </div>
+      <div class="info-box ib-orange">
+        <div class="info-box-title">⏱ 흡수 Cutoff</div>
+        <div class="info-box-body">
+          젤 <b>25분</b>·물 <b>15분</b>·염분 <b>20분</b>의 흡수 시간을 역산해, 피니쉬 전 효과가 없는 보급은 자동으로 배제합니다.
+        </div>
+      </div>
+    </div>
+
+    <div class="callout callout-info" style="margin-top:24px">
+      <span class="callout-icon">ℹ️</span>
+      <div class="callout-text">
+        모든 계산은 <b>브라우저 내에서만</b> 처리됩니다. GPX 파일은 서버에 업로드되지 않으며 외부로 전송되지 않습니다.
+      </div>
+    </div>
+  </section>
+
+  <!-- QUICK START -->
+  <section class="section" id="quickstart">
+    <div class="sec-label"><span class="sec-num">01</span> QUICK START</div>
+    <h2 class="sec-title">5분 안에<br>전략 완성하기</h2>
+
+    <div class="steps">
+      <div class="step-card">
+        <div class="step-num">1</div>
+        <div class="step-content">
+          <div class="step-title">GPX 파일 준비</div>
+          <div class="step-desc">
+            참가할 레이스의 GPX 파일을 준비합니다. 대부분의 대회 공식 홈페이지에서 제공하며, <b>Strava·Garmin Connect·Komoot</b> 등에서도 다운로드할 수 있습니다. <code>01 GPX COURSE SOURCE</code>에서 파일을 선택하면 지도와 고도 차트가 자동으로 그려집니다.
+          </div>
+        </div>
+      </div>
+      <div class="step-card">
+        <div class="step-num">2</div>
+        <div class="step-content">
+          <div class="step-title">목표 완주 시간 입력</div>
+          <div class="step-desc">
+            <code>02 TARGET FINISH TIME</code>에 목표 시간을 HRS·MIN·SEC 단위로 입력합니다. 시간을 입력하는 즉시 <b>06번 PLANNED INTAKE</b> 예상 수치가 실시간으로 업데이트됩니다.
+          </div>
+        </div>
+      </div>
+      <div class="step-card">
+        <div class="step-num">3</div>
+        <div class="step-content">
+          <div class="step-title">환경 및 신체 정보 입력</div>
+          <div class="step-desc">
+            레이스 당일 예상 기온·습도와 본인의 체중, 땀 분비율, 땀 염분 농도를 설정합니다. 잘 모르겠다면 <b>기본값 그대로 사용</b>해도 충분히 유효한 전략이 생성됩니다.
+          </div>
+        </div>
+      </div>
+      <div class="step-card">
+        <div class="step-num">4</div>
+        <div class="step-content">
+          <div class="step-title">GENERATE STRATEGY 클릭</div>
+          <div class="step-desc">
+            초록색 버튼을 누르면 지도에 보급 마커가 표시되고, 우측 패널에 km별 계획이 펼쳐집니다. <b>마커를 클릭</b>하면 해당 지점의 상세 정보와 남은 시간이 팝업으로 표시됩니다.
+          </div>
+        </div>
+      </div>
+      <div class="step-card">
+        <div class="step-num">5</div>
+        <div class="step-content">
+          <div class="step-title">CSV로 내보내기</div>
+          <div class="step-desc">
+            <code>EXPORT (10KM)</code>은 10km 구간별 합산, <code>EXPORT (TERRAIN)</code>은 오르막·평지·내리막 지형별 합산으로 저장됩니다. 엑셀이나 노션에 붙여넣어 레이스 노트로 활용하세요.
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- INPUTS -->
+  <section class="section" id="inputs">
+    <div class="sec-label"><span class="sec-num">02</span> INPUTS</div>
+    <h2 class="sec-title">입력 항목<br>상세 가이드</h2>
+
+    <table class="param-table">
+      <thead>
+        <tr>
+          <th>항목</th>
+          <th>권장 범위</th>
+          <th>설명 및 팁</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>
+            <div class="param-name">기온 (°C)</div>
+            <div class="param-range">–10 ~ 45°C</div>
+          </td>
+          <td style="color:var(--muted)">레이스 당일 예보 기준</td>
+          <td>
+            <div class="param-desc">15°C 이상부터 수분 필요량이 급격히 증가합니다. <b>기온이 1°C 오를수록 시간당 수분 요구량이 약 15ml 증가</b>합니다. 새벽 출발 레이스라면 최고 기온보다 평균 기온을 입력하는 것이 더 현실적입니다.</div>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <div class="param-name">습도 (%)</div>
+            <div class="param-range">0 ~ 100%</div>
+          </td>
+          <td style="color:var(--muted)">현재는 참고값</td>
+          <td>
+            <div class="param-desc">현재 버전에서는 기온과 함께 표시되나, 주요 계산 반영은 추후 업데이트 예정입니다. 고온다습 환경에서는 땀 분비율(SWEAT RATE)을 높게 조정하는 방식으로 보완하세요.</div>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <div class="param-name">체중 (KG)</div>
+            <div class="param-range">30 ~ 120kg</div>
+          </td>
+          <td style="color:var(--muted)">기본값: 60kg</td>
+          <td>
+            <div class="param-desc">모든 계산의 기준 스케일입니다. <b>60kg 대비 비례 보정</b>이 적용되므로, 본인 체중에 가까울수록 더 정확한 전략이 나옵니다. 레이스 전날 아침 공복 체중을 권장합니다.</div>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <div class="param-name">SWEAT RATE</div>
+            <div class="param-range">LV.1 ~ LV.10</div>
+          </td>
+          <td style="color:var(--muted)">기본값: LV.5</td>
+          <td>
+            <div class="param-desc">훈련 중 땀 분비 정도를 기준으로 선택합니다.</div>
+            <div class="param-tip">LV.1–2: 운동 후에도 거의 안 젖음 · LV.3–4: 땀이 나지만 옷이 살짝 젖는 정도 · LV.5–6: 운동 후 셔츠가 젖음 (평균) · LV.7–8: 땀이 뚝뚝 떨어짐 · LV.9–10: 극심한 발한, 탈수 위험</div>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <div class="param-name">SALTINESS</div>
+            <div class="param-range">LV.1 ~ LV.10</div>
+          </td>
+          <td style="color:var(--muted)">기본값: LV.1</td>
+          <td>
+            <div class="param-desc">땀의 나트륨 농도입니다. Baker(2017) 기준 LV.1=약 300mg/L, LV.10=약 1800mg/L.</div>
+            <div class="param-tip">Hypotonic(LV.1–2): 땀을 흘려도 짜지 않음, 옷에 흰 자국 없음 · Normal(LV.3–5): 평균 · Salty(LV.6–8): 땀이 눈에 들어가면 따가움, 피부에 흰 결정 생김 · Hyper-salty(LV.9–10): 레이스 후 셔츠에 소금 자국 선명</div>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <div class="param-name">GEL 간격 (km)</div>
+            <div class="param-range">2.0 ~ 15.0km</div>
+          </td>
+          <td style="color:var(--muted)">자동 계산</td>
+          <td>
+            <div class="param-desc">목표 페이스 기반으로 자동 계산되지만 직접 수정할 수 있습니다. <b>25분 이상의 간격</b>을 권장합니다. 너무 짧으면 위장 부담이 커집니다.</div>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <div class="param-name">WAT 간격 (km)</div>
+            <div class="param-range">1.5 ~ 10.0km</div>
+          </td>
+          <td style="color:var(--muted)">자동 계산</td>
+          <td>
+            <div class="param-desc">250ml 단위 섭취 간격입니다. 기온이 높거나 SWEAT RATE가 높을수록 자동으로 간격이 짧아집니다. 에이드 스테이션 간격에 맞춰 수동 조정도 가능합니다.</div>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <div class="param-name">SAL 간격 (km)</div>
+            <div class="param-range">2.0 ~ 15.0km</div>
+          </td>
+          <td style="color:var(--muted)">SALTINESS 연동</td>
+          <td>
+            <div class="param-desc"><b>SALTINESS 레벨에 반비례</b>합니다. 짠 땀 체질(LV.10)일수록 간격이 좁아져 더 자주 전해질을 보충해야 합니다.</div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- OUTPUTS -->
+  <section class="section" id="outputs">
+    <div class="sec-label"><span class="sec-num">03</span> OUTPUTS</div>
+    <h2 class="sec-title">결과 화면<br>읽는 법</h2>
+
+    <div class="output-row">
+      <div class="output-icon">🚩</div>
+      <div class="output-label" style="color:var(--green)">PRE-START LOADING</div>
+      <div class="output-desc">
+        레이스 중 흡수 가능한 탄수화물량이 소비 예상량보다 부족할 때 표시됩니다. 표시된 <b>g CARB</b>만큼을 출발 2~3시간 전 식사로 추가 섭취하면 에너지 부족 없이 완주할 수 있습니다.
+      </div>
+    </div>
+    <div class="output-row">
+      <div class="output-icon">⏱</div>
+      <div class="output-label" style="color:var(--purple)">ABSORPTION CUTOFF</div>
+      <div class="output-desc">
+        각 보급물의 <b>마지막 유효 섭취 지점</b>입니다. 이 지점 이후의 보급은 피니쉬 전까지 흡수가 완료되지 않아 실질적 효과가 없습니다. 마지막 젤(25분)·물(15분)·염분(20분) 기준으로 페이스에 따라 자동 계산됩니다.
+      </div>
+    </div>
+    <div class="output-row">
+      <div class="output-icon">⚡</div>
+      <div class="output-label" style="color:var(--orange)">젤 마커</div>
+      <div class="output-desc">
+        지도 위 오렌지 마커. 해당 지점까지의 <b>누적 탄수화물 필요량(g)</b>을 표시합니다. 마커 클릭 시 거리·남은 시간·섭취량 팝업이 뜹니다.
+      </div>
+    </div>
+    <div class="output-row">
+      <div class="output-icon">💧</div>
+      <div class="output-label" style="color:var(--blue)">수분 마커</div>
+      <div class="output-desc">
+        지도 위 파란 마커. 해당 지점까지의 <b>누적 수분 필요량(ml)</b>을 표시합니다. 에이드 스테이션 위치와 비교해 개인 보급 전략을 세우는 데 활용하세요.
+      </div>
+    </div>
+    <div class="output-row">
+      <div class="output-icon">💊</div>
+      <div class="output-label" style="color:var(--purple)">전해질 마커</div>
+      <div class="output-desc">
+        지도 위 보라 마커. 이 지점에서 필요한 <b>나트륨(Na⁺) mg</b>을 표시합니다. 시중 전해질 제품(SaltStick 캡슐 ≒ 215mg, Nuun 정제 ≒ 300mg)과 비교해 몇 알 복용할지 결정하세요.
+      </div>
+    </div>
+    <div class="output-row">
+      <div class="output-icon">📊</div>
+      <div class="output-label" style="color:var(--text)">1KM TACTICAL PLAN</div>
+      <div class="output-desc">
+        km 단위로 그 구간에서 소비될 <b>⚡탄수화물(g)과 💧수분(ml)</b>을 나열합니다. 오르막 구간은 평지보다 더 높은 에너지 소비가 반영됩니다.
+      </div>
+    </div>
+
+    <div class="callout callout-tip" style="margin-top:32px">
+      <span class="callout-icon">💡</span>
+      <div class="callout-text">
+        <b>CSV EXPORT 활용법</b> — <code>EXPORT (10KM)</code>은 보급 스테이션 사전 준비에 유용합니다. <code>EXPORT (TERRAIN)</code>은 오르막 구간에 집중 보급이 필요한 울트라 트레일 레이스에서 특히 유용합니다.
+      </div>
+    </div>
+  </section>
+
+  <!-- SCIENCE -->
+  <section class="section" id="science">
+    <div class="sec-label"><span class="sec-num">04</span> SCIENCE</div>
+    <h2 class="sec-title">계산의 근거가<br>되는 연구들</h2>
+
+    <p style="font-size:13px; color:var(--muted); line-height:1.9; margin-bottom:24px;">
+      KINETIC PACER의 모든 수치는 동료 심사(peer-reviewed) 학술 논문을 근거로 합니다. 개인차가 있으므로 훈련 중 검증을 권장합니다.
+    </p>
+
+    <div class="science-grid">
+      <div class="sci-card">
+        <span class="sci-tag sci-tag-e">ENERGY</span>
+        <div class="sci-author">Minetti (2002)</div>
+        <div class="sci-title">경사도별 에너지 소비 공식 — 오르막/내리막 km당 칼로리 보정에 사용</div>
+      </div>
+      <div class="sci-card">
+        <span class="sci-tag sci-tag-e">ENERGY</span>
+        <div class="sci-author">Jeukendrup (2014)</div>
+        <div class="sci-title">탄수화물 흡수 타이밍 — 젤 효과 발현 5~15분, Cutoff 25분 기준</div>
+      </div>
+      <div class="sci-card">
+        <span class="sci-tag sci-tag-e">ENERGY</span>
+        <div class="sci-author">Jeukendrup (2011)</div>
+        <div class="sci-title">복합 당 흡수 — Glucose+Fructose 조합 시 최대 85g/hr 흡수 상한</div>
+      </div>
+      <div class="sci-card">
+        <span class="sci-tag sci-tag-h">HYDRATE</span>
+        <div class="sci-author">Sawka (2007)</div>
+        <div class="sci-title">ACSM 수분 섭취 지침 — 수분 Cutoff 15분, 안전 섭취 범위</div>
+      </div>
+      <div class="sci-card">
+        <span class="sci-tag sci-tag-s">SALT</span>
+        <div class="sci-author">Baker (2017)</div>
+        <div class="sci-title">운동선수 땀 나트륨 농도 분포 — LV.1~10 스케일 기준값(300~1800mg/L)</div>
+      </div>
+      <div class="sci-card">
+        <span class="sci-tag sci-tag-g">GENERAL</span>
+        <div class="sci-author">Thomas / ACSM (2016)</div>
+        <div class="sci-title">운동 영양 포지션 스탠드 — 전반적인 보급 전략 프레임워크</div>
+      </div>
+    </div>
+
+    <div class="callout callout-warn" style="margin-top:24px">
+      <span class="callout-icon">⚠️</span>
+      <div class="callout-text">
+        이 도구는 <b>교육·계획 목적의 시뮬레이션</b>입니다. 의료적 조언을 대체하지 않습니다. 특히 심혈관 질환, 신장 질환, 전해질 이상 병력이 있는 경우 스포츠 의학 전문의와 상담하세요.
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section class="section" id="faq">
+    <div class="sec-label"><span class="sec-num">05</span> FAQ</div>
+    <h2 class="sec-title">자주 묻는<br>질문들</h2>
+
+    <div class="faq-item">
+      <div class="faq-q">GPX 파일은 어디서 구하나요?</div>
+      <div class="faq-a">대부분의 대회 공식 홈페이지 '코스 소개' 페이지에 GPX 다운로드 링크가 있습니다. 없다면 <b>Strava (루트 탐색기)</b>, <b>Komoot</b>, <b>Garmin Connect</b>에서 코스를 직접 그리거나 기존 기록된 활동에서 내보내기 할 수 있습니다.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">전해질 마커에 표시된 mg은 어떻게 사용하나요?</div>
+      <div class="faq-a">표시된 mg은 해당 지점에서 필요한 <b>나트륨(Na⁺) 양</b>입니다. 시중 제품과 비교하세요: <b>SaltStick 캡슐 1알 ≒ 215mg</b>, <b>Nuun 정제 1알 ≒ 300mg</b>, <b>LMNT 스틱 1포 ≒ 1000mg</b>. 표시된 mg ÷ 제품 1회 Na 함량 = 필요 복용 수량입니다.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">PRE-START LOADING이 뜨지 않아요.</div>
+      <div class="faq-a">레이스 중 흡수 가능한 탄수화물이 소비 예상량을 충당할 수 있을 때는 표시되지 않습니다. 이는 <b>정상 상태</b>입니다. 완만한 코스, 느린 페이스, 가벼운 체중일수록 표시될 가능성이 낮습니다. GPX를 먼저 불러온 후 목표 시간을 입력하면 더 정확하게 계산됩니다.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">마지막 구간에 보급 마커가 없어요.</div>
+      <div class="faq-a">의도된 설계입니다. <b>흡수 Cutoff</b> 기능에 의해, 피니쉬 전 흡수가 완료되지 않는 보급은 자동으로 배제됩니다. 젤은 피니쉬 25분 전, 물은 15분 전, 염분은 20분 전이 마지막 유효 지점입니다.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">모바일에서 지도가 보이지 않아요.</div>
+      <div class="faq-a">GPX 파일을 먼저 불러온 후 <b>GENERATE STRATEGY 버튼을 누르면</b> 지도가 표시됩니다. 파일만 불러온 상태에서는 지도가 초기화되지 않습니다. 그래도 안 보인다면 페이지를 새로고침 후 다시 시도해주세요.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">계산값을 믿어도 되나요?</div>
+      <div class="faq-a">학술 논문 기반의 합리적인 추정값이지만, <b>개인차가 큽니다</b>. 레이스 전 장거리 훈련에서 반드시 동일한 전략을 테스트해보세요. 특히 젤 종류, 수분 섭취 방식, 위장 내성은 훈련 중 개인화가 필수입니다.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">내 데이터는 저장되나요?</div>
+      <div class="faq-a">아니요. 모든 처리는 브라우저 내에서만 이루어지며, GPX 파일과 입력값은 <b>서버로 전송되지 않습니다</b>. 페이지를 닫으면 모든 데이터가 초기화됩니다.</div>
+    </div>
+  </section>
+
+</main>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="footer-logo">Kinetic Pacer</div>
+  <div class="footer-copy">© 2026 @everyambrose_ ALL RIGHTS RESERVED.</div>
+</footer>
+
+<script>
+/* FAQ accordion */
+document.querySelectorAll('.faq-q').forEach(q => {
+  q.addEventListener('click', () => {
+    const a = q.nextElementSibling;
+    const isOpen = q.classList.contains('open');
+    document.querySelectorAll('.faq-q.open').forEach(oq => {
+      oq.classList.remove('open');
+      oq.nextElementSibling.classList.remove('open');
+    });
+    if(!isOpen) { q.classList.add('open'); a.classList.add('open'); }
+  });
+});
+
+/* TOC active highlight on scroll */
+const sections = document.querySelectorAll('.section');
+const tocItems = document.querySelectorAll('.toc-item');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if(e.isIntersecting) {
+      const id = e.target.getAttribute('id');
+      tocItems.forEach(t => {
+        t.style.color = t.getAttribute('href') === '#'+id ? 'var(--green)' : '';
+        t.style.borderBottomColor = t.getAttribute('href') === '#'+id ? 'var(--green)' : 'transparent';
+      });
+    }
+  });
+}, { rootMargin: '-40% 0px -55% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>
