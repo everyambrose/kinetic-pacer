@@ -13,7 +13,7 @@
 <meta property="og:description" content="GPX + 목표 시간 입력 → 젤·수분·염분 보급 타이밍 자동 계산">
 <meta property="og:type" content="website">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
-<title>KINETIC PACER v9.4 — Marathon Nutrition Strategy</title>
+<title>KINETIC PACER v9.5 — Marathon Nutrition Strategy</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@800&family=IBM+Plex+Mono:wght@400;500;600&family=Barlow+Condensed:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <style>
@@ -146,7 +146,7 @@ input[type=range] { accent-color:var(--green); cursor:pointer; }
   <div style="margin-bottom:5px; display:flex; align-items:center; justify-content:space-between;">
     <div>
       <span class="kinetic-logo">KINETIC PACER</span>
-      <span style="color:var(--green); font-family:var(--fd); font-weight:700; font-size:18px; margin-left:5px;">v9.4</span>
+      <span style="color:var(--green); font-family:var(--fd); font-weight:700; font-size:18px; margin-left:5px;">v9.5</span>
     </div>
     <a href="manual.html" style="font-family:var(--fd); font-size:12px; font-weight:700; letter-spacing:1px; color:#000; background:var(--green); text-decoration:none; padding:7px 13px; border-radius:5px; white-space:nowrap; flex-shrink:0; transition:0.2s;" onmouseover="this.style.background='#5eeea0'" onmouseout="this.style.background='var(--green)'">📖 MANUAL</a>
   </div>
@@ -210,6 +210,10 @@ input[type=range] { accent-color:var(--green); cursor:pointer; }
     <div>TOTAL GAIN <em id="statElev">0m</em></div>
     <div>LAST CUTOFF <em id="statCutoff" style="color:var(--purple)">—</em></div>
   </div>
+  <!-- [MEDIUM-2] 고도 데이터 없는 GPX 경고 배너 — JS에서 style.display='block'으로 활성화 -->
+  <div id="kp-ele-warn" style="display:none; background:rgba(249,115,22,0.12); border:1px solid var(--orange); border-radius:6px; padding:8px 14px; margin-bottom:6px; font-size:11px; color:var(--orange); font-family:var(--fd); font-weight:700; letter-spacing:0.5px;">
+    ⚠️ GPX에 고도 데이터가 없습니다. 평지 기준(GAP=1.0)으로 계산됩니다.
+  </div>
   <div class="content-row">
     <div id="map" data-zoom="13"></div>
     <div class="intake-panel">
@@ -235,7 +239,8 @@ input[type=range] { accent-color:var(--green); cursor:pointer; }
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- [MEDIUM-4 FIX] Chart.js 버전 고정 — latest 참조 시 v3→v4 breaking change로 차트 깨짐 방지 -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.umd.min.js"></script>
 <script>
 let gPts=[], lMap=null, markerGroup=null, polyline=null, chart=null, selectedIndex=-1, avgGapFactor=1.0;
 let lastResultData = [];
@@ -345,21 +350,33 @@ function exportCSV(mode) {
             csvData.push([`${k}-${k+chunk.length}km`, "Mixed", Math.round(sumC), Math.round(sumW), Math.round(sumS), Math.round(sumA)]);
         }
     } else if(mode === 'terrain') {
+        /* [MEDIUM-1 FIX] 마지막 구간 데이터 누락 버그 수정.
+           기존 코드: 타입 전환 조건에서 flush 후 즉시 sumC+=d.c 재누적 → 마지막 항목이 이중계산.
+           수정: accumulate-first, flush-on-transition 패턴으로 변경. */
         let currentType = lastResultData[0].type;
         let startKm = 0, sumC=0, sumW=0, sumS=0, sumA=0;
         lastResultData.forEach((d, i) => {
-            if(d.type !== currentType || i === lastResultData.length - 1) {
+            const isLast = i === lastResultData.length - 1;
+            const typeChanged = d.type !== currentType;
+            if(typeChanged) {
+                /* 이전 구간 flush — 현재 d는 새 구간 첫 항목이므로 포함 안 함 */
                 csvData.push([`${startKm}-${d.km}km`, currentType, Math.round(sumC), Math.round(sumW), Math.round(sumS), Math.round(sumA)]);
                 currentType = d.type; startKm = d.km; sumC=0; sumW=0; sumS=0; sumA=0;
             }
             sumC+=d.c; sumW+=d.w; sumS+=d.s; sumA+=d.a;
+            if(isLast) {
+                /* 마지막 구간 flush — 루프 종료 후 남은 합계를 반드시 기록 */
+                csvData.push([`${startKm}-${d.km}km`, currentType, Math.round(sumC), Math.round(sumW), Math.round(sumS), Math.round(sumA)]);
+            }
         });
     }
     let csvContent = "data:text/csv;charset=utf-8,\uFEFF" + csvData.map(e => e.join(",")).join("\n");
     let link = document.createElement("a");
     link.setAttribute("href", encodeURI(csvContent));
     link.setAttribute("download", `KineticPacer_Strategy_${mode}.csv`);
-    document.body.appendChild(link); link.click();
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);  /* DOM 누수 방지 (CRITICAL-3 연계 수정) */
 }
 
 function getD(a,b){ const R=6371e3, r=Math.PI/180; const x=Math.sin((b.lat-a.lat)*r/2)**2+Math.cos(a.lat*r)*Math.cos(b.lat*r)*Math.sin((b.lon-a.lon)*r/2)**2; return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x)); }
@@ -376,11 +393,13 @@ document.getElementById('fi').onchange = e => {
       return;
     }
 
-    let d=0, g=0, pr=null, tGf=0, validSegments=0; gPts=[];
+    let d=0, g=0, pr=null, tGf=0, validSegments=0, hasEle=false; gPts=[];
     pts.forEach((p,i)=>{
       /* [FIX-4] ele 태그 누락 GPX 안전 처리 — undefined/빈값이면 0으로 폴백 */
       const eleRaw = p.querySelector('ele')?.textContent;
-      const ele = (eleRaw != null && eleRaw.trim() !== '') ? +eleRaw : 0;
+      const elePresent = (eleRaw != null && eleRaw.trim() !== '');
+      if(elePresent) hasEle = true;
+      const ele = elePresent ? +eleRaw : 0;
       const pt={lat:+p.getAttribute('lat'),lon:+p.getAttribute('lon'),ele};
       if(pr){
         const sd=getD(pr,pt);
@@ -398,6 +417,17 @@ document.getElementById('fi').onchange = e => {
       gPts = [];
       e.target.value = '';
       return;
+    }
+
+    /* [MEDIUM-2 FIX] 고도 데이터 없는 GPX 경고 — 평지 계산만 수행됨을 사용자에게 알림.
+       ele 태그가 한 번도 등장하지 않은 경우에만 경고 표시. */
+    if(!hasEle) {
+      console.warn('[KP-Debug] GPX에 고도(<ele>) 데이터가 없습니다. 평지 기준(GAP factor=1.0)으로 계산합니다.');
+      const warn = document.getElementById('kp-ele-warn');
+      if(warn) warn.style.display = 'block';
+    } else {
+      const warn = document.getElementById('kp-ele-warn');
+      if(warn) warn.style.display = 'none';
     }
 
     /* [FIX-2] avgGapFactor: pts.length-1 대신 validSegments 기반 계산
@@ -451,6 +481,8 @@ document.getElementById('calcBtn').onclick = () => {
   let lGel=0.1, lWat=0.1, lSal=0.1, aC=0, aW=0, kAC=0, kAW=0, kAA=0, kAS=0;
   let lastGelKm=0, lastWatKm=0, lastSalKm=0;
   intakePanel.innerHTML=''; lastResultData = [];
+  /* [MEDIUM-5] DocumentFragment 선언 — 루프 내 DOM 조작 대신 가상 노드에 누적 */
+  const _intakeFrag = document.createDocumentFragment();
   
   for(let i=1; i<gPts.length; i++){
     const p=gPts[i], pr=gPts[i-1], d=p.distKm-pr.distKm; if(d<=0)continue;
@@ -485,12 +517,20 @@ document.getElementById('calcBtn').onclick = () => {
     
     if(Math.floor(p.distKm)>Math.floor(pr.distKm)){
         const terrain = (p.ele - gPts[Math.max(0, i-20)].ele) > 5 ? "UPHILL" : (p.ele - gPts[Math.max(0, i-20)].ele) < -5 ? "DOWN" : "FLAT";
-        intakePanel.innerHTML+=`<div class="intake-item"><span>${Math.floor(p.distKm)}km</span><span style="color:var(--green)">⚡${Math.round(kAC)}g | 💧${Math.round(kAW)}ml</span></div>`;
+        /* [MEDIUM-5 FIX] innerHTML += → DocumentFragment 방식으로 교체.
+           100km 코스 기준 ~100회 반복 시 innerHTML +=는 매번 전체 DOM 재파싱 발생.
+           DocumentFragment는 루프 내 가상 노드에만 누적 후 마지막에 한 번만 삽입. */
+        _intakeFrag.appendChild(Object.assign(document.createElement('div'), {
+          className: 'intake-item',
+          innerHTML: `<span>${Math.floor(p.distKm)}km</span><span style="color:var(--green)">⚡${Math.round(kAC)}g | 💧${Math.round(kAW)}ml</span>`
+        }));
         lastResultData.push({km: Math.floor(p.distKm), c: kAC, w: kAW, s: kAS, a: kAA, type: terrain});
         kAC=0; kAW=0; kAA=0; kAS=0;
     }
   }
-  
+  /* [MEDIUM-5] 루프 완료 후 Fragment를 한 번에 DOM에 삽입 — 리플로우 1회만 발생 */
+  intakePanel.appendChild(_intakeFrag);
+
   /* Show cutoff info box */
   cutoffInfo.style.display = 'block';
   cutoffDetail.innerHTML = `
