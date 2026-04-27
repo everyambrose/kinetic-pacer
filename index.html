@@ -264,7 +264,9 @@ function getSweatNaConc(saltL) {
 function updateSweatUI(v) {
   sL.innerText=v;
   const m=[["Very Dry","Hardly any sweat."],["Light Sheen","A bit sweaty."],["Moderate","Consistent sweating."],["Heavily Sweaty","Clothes sticking."],["Drenched","Dripping constant."],["Extreme","Severe loss."]];
-  let idx=Math.floor((v-1)/1.8); sT.innerText=m[idx][0];
+  /* [HIGH-3 FIX] 배열 범위 초과 방어: v=10 → idx=5(최대), v>10(비정상) → clamp */
+  let idx = Math.min(5, Math.floor((v - 1) / 1.8));
+  sT.innerText=m[idx][0];
 }
 
 function updateSaltUI(v) {
@@ -275,8 +277,19 @@ function updateSaltUI(v) {
 
 function liveUpdate() {
     const h=+th.value||0, m=+tm.value||0, s=+ts.value||0, tV=+temp.value, sweatL=+sweat_lvl.value, saltL=+salt_lvl.value, wt=+weight.value||60;
-    const tSec=(h*3600)+(m*60)+s, tHr=tSec/3600, dist=parseFloat(statDist.innerText)||42.195;
-    
+    const tSec=(h*3600)+(m*60)+s, tHr=tSec/3600;
+
+    /* [HIGH-2 FIX] GPX 미업로드 상태 조기 반환 — dist 42.195 하드코딩 제거.
+       gPts가 없으면 거리를 알 수 없으므로 프리뷰 값을 '—'로 표시 후 종료. */
+    if(!gPts.length) {
+        preCarb.innerText='—';
+        preWater.innerText='—';
+        preSalt.innerText='—';
+        preloadingUI.style.display='none';
+        return;
+    }
+    const dist = gPts[gPts.length - 1].distKm;
+
     /* If target time not set, clear dependent UI and exit gracefully */
     if(tSec===0) {
         preloadingUI.style.display='none';
@@ -422,7 +435,13 @@ document.getElementById('calcBtn').onclick = () => {
   const cutoffWaterKm = (CUTOFF_WATER_MIN / paceMinPerKm);
   const cutoffSaltKm  = (CUTOFF_SALT_MIN  / paceMinPerKm);
 
-  if(!lMap){ lMap=L.map('map',{zoomControl:false}).setView([gPts[0].lat, gPts[0].lon],13); L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(lMap); lMap.on('zoom',()=>{ const sc=lMap.getZoom()<=13?1:lMap.getZoom()===14?1.4:lMap.getZoom()===15?1.8:2.4; document.documentElement.style.setProperty('--icon-scale',sc); }); setTimeout(()=>lMap.invalidateSize(),300); }
+  if(!lMap){ lMap=L.map('map',{zoomControl:false}).setView([gPts[0].lat, gPts[0].lon],13); L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(lMap); lMap.on('zoom',()=>{ const sc=lMap.getZoom()<=13?1:lMap.getZoom()===14?1.4:lMap.getZoom()===15?1.8:2.4; document.documentElement.style.setProperty('--icon-scale',sc); });
+    /* [HIGH-1 FIX] 모바일 첫 렌더링 시 타일 미표시 대응:
+       300ms 1차 시도 + 1000ms fallback — DOM 재배치(applyMobileLayout) 후
+       map 컨테이너 크기 확정까지 시간이 더 필요한 저사양 기기 커버. */
+    setTimeout(()=>lMap.invalidateSize(), 300);
+    setTimeout(()=>lMap.invalidateSize(), 1000);
+  }
   if(markerGroup) markerGroup.clearLayers(); else markerGroup=L.layerGroup().addTo(lMap);
   if(polyline) lMap.removeLayer(polyline); polyline=L.polyline(gPts.map(p=>[p.lat,p.lon]),{color:'#3ddc84',weight:3.5}).addTo(lMap);
 
@@ -501,9 +520,17 @@ function applyMobileLayout() {
 }
 applyMobileLayout();
 
-/* Fix Leaflet tile rendering on mobile orientation change / resize */
-window.addEventListener('resize', () => { if(lMap) setTimeout(()=>lMap.invalidateSize(), 200); });
-window.addEventListener('orientationchange', () => { if(lMap) setTimeout(()=>lMap.invalidateSize(), 400); });
+/* [HIGH-4 FIX] resize / orientationchange 디바운스 처리.
+   iOS Safari는 화면 회전 시 두 이벤트가 동시 발화 → 중복 invalidateSize 방지.
+   debounce 500ms: 짧은 연속 이벤트를 하나로 병합하여 타일 깜빡임 제거. */
+let _resizeTimer = null;
+function _onMapResize() {
+  if(!lMap) return;
+  clearTimeout(_resizeTimer);
+  _resizeTimer = setTimeout(() => lMap.invalidateSize(), 500);
+}
+window.addEventListener('resize', _onMapResize);
+window.addEventListener('orientationchange', _onMapResize);
 </script>
 </body>
 </html>
