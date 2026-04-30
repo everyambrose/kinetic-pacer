@@ -1,5 +1,21 @@
 # CHANGELOG — Kinetic Pacer
 
+## v10.0.1 (2026-04-30)
+> 팀 시뮬레이션(Seoul 100K) 리뷰 기반 패치
+
+### 🔴 Critical
+- Fixed: UPHILL 카드 "진입 전 보급" 배지 → FLAT/DOWN 카드(업힐 직전)에만 표시로 이동
+- Fixed: DOWN 블록 하강 고도 `lossM` 집계 추가 — `−Xm` 정확 표시
+
+### 🟠 High
+- Fixed: DOWN 블록 예상 시간 — 에너지 지표(GAP factor)와 분리, trail pace factor 0.85 적용
+- Fixed: 업힐 예상 시간 avgGf 보정 유지 (BUG-3 v2)
+- Fixed: GI 경고 임계값 60→75 g/hr (Jeukendrup 2014 다중 운반체 기준, 과잉 트리거 방지)
+
+### 🟡 UX
+- Added: terrainPanel 빈 상태 안내 문구 (GPX 업로드 전)
+- Added: GI 위험 경고 배너 (10hr+ + 75g/hr 초과 시, Costa 2017 근거)
+
 ## v10.0 (2026-04-30)
 > TERRAIN TAB 신규 기능 (KP-Runner / KP-Debug / KP-Science 협업)
 

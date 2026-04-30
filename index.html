@@ -370,12 +370,14 @@ function liveUpdate() {
         preloadingUI.style.display = 'none';
     }
 
-    /* [KP-Science] GI 위험 경고 — 장레이스(연속 10hr+)에서
-       시간당 탄수화물 개대수가 60g/hr를 넘으면 Gut-Training 없이 GI 트러블 위험 상승.
-       Costa 2017 (PMID 28177715): 2주 복장 Gut-Training 시 GI 증상 50% 감소. */
+    /* [KP-Science] GI 위험 경고
+       임계값 75g/hr: Jeukendrup 2014 다중 운반체 CHO 최대 흡수량 기준.
+       기존 60g/hr는 단일 운반체 한계치 — multi-transporter 공식 적용 시 과잉 트리거.
+       75g/hr는 gut-training 없는 선수가 실질적 불편함을 체감하기 시작하는 기준점.
+       Costa 2017 (PMID 28177715): 2주 Gut-Training 시 GI 증상 50% 감소. */
     const giWarn = document.getElementById('kp-gi-warn');
     if(giWarn) {
-        if(tHr >= 10 && absorptionRate > 60) {
+        if(tHr >= 10 && absorptionRate > 75) {
             giWarn.style.display = 'block';
         } else {
             giWarn.style.display = 'none';
@@ -554,10 +556,16 @@ function buildTerrainBlocks(gPts, paceMinPerKm, waterRate, weightFactor, tSec, t
       else lossM+=pr.ele-p.ele;
       totGf+=gf; gfCnt++;
     }
-    /* [BUG-3 FIX] 업힐 예상시간 GAP factor 보정 — 평지 페이스 사용 시 50%+ 과소평가 발생.
-       avgGf로 보정된 실제 업힐 소요시간 제공. */
+    /* [BUG-3 FIX v2] 에너지 지표(avgGf)와 시간 추정 분리.
+       GAP factor는 에너지 비용 지표 → 탄수화물 계산에만 적합.
+       DOWN 블록에 avgGf(~0.8) 그대로 쓰면 하강 소요시간 과대 추정 발생.
+       trail 하강 pace factor 0.85: 기술적 트레일 하강 시 평지 대비 ~15% 빠름 (보수적 추정).
+       UPHILL: avgGf 유지(에너지 + 페이스 모두 느려짐) | DOWN: 0.85 | FLAT: 1.0 */
     const avgGf = gfCnt > 0 ? totGf/gfCnt : 1.0;
-    const bMin = (b.endKm-b.startKm) * paceMinPerKm * avgGf;
+    const timeFactor = b.type === 'UPHILL' ? avgGf
+                     : b.type === 'DOWN'   ? 0.85
+                     : 1.0;
+    const bMin = (b.endKm-b.startKm) * paceMinPerKm * timeFactor;
     const na=Math.round(Math.max(50,Math.min(800,(waterRate*(bMin/60)/1000)*sweatNaConc*0.75)));
     return { type:b.type, startKm:b.startKm, endKm:b.endKm,
              gainM:Math.round(gainM), lossM:Math.round(lossM),
