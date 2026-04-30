@@ -1,5 +1,17 @@
 # CHANGELOG — Kinetic Pacer
 
+## v10.0 (2026-04-30)
+> TERRAIN TAB 신규 기능 (KP-Runner / KP-Debug / KP-Science 협업)
+
+### ✨ NEW
+- Added: 우측 패널 탭 전환 UI — 🔺 TERRAIN (기본값) / 📊 1KM PLAN
+- Added: `buildTerrainBlocks()` — 거리 기반(300m 창) grade 계산, GPS 밀도 무관
+- Added: grade ±8% threshold — Minetti 2002 + KP-Runner 현장 검증 (GAP factor ≈ 1.28)
+- Added: 0.5km 미만 파편 블록 자동 병합 알고리즘
+- Added: TERRAIN 카드 — 구간별 고도/예상시간/탄수화물/수분/염분 표시
+- Added: "⚠️ 다음 업힐 전 보급 권고" / "🔺 진입 전 보급 완료 권장" 배지
+- Added: 레퍼런스 2건 추가 — Tiller 2019 (ISSN Ultra-Marathon, PMID 31480033), Costa 2017 (Gut-Training, PMID 28177715)
+
 ## v9.4 (2026-04-25)
 - Added: 모바일 최적화 (2열 그리드 레이아웃)
 - Added: USER MANUAL 버튼 (로고 옆)

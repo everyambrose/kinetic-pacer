@@ -13,7 +13,7 @@
 <meta property="og:description" content="GPX + 목표 시간 입력 → 젤·수분·염분 보급 타이밍 자동 계산">
 <meta property="og:type" content="website">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
-<title>KINETIC PACER v9.5 — Marathon Nutrition Strategy</title>
+<title>KINETIC PACER v10.0 — Marathon Nutrition Strategy</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@800&family=IBM+Plex+Mono:wght@400;500;600&family=Barlow+Condensed:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <style>
@@ -138,6 +138,21 @@ input[type=range] { accent-color:var(--green); cursor:pointer; }
 
 .nutrition-icon div { transform: scale(var(--icon-scale)); transform-origin: center; cursor:pointer; }
 .icon-badge { font-size:8px; color:#fff; padding:1px 3px; border-radius:2px; font-weight:700; display:block; margin-top:-5px; box-shadow:0 2px 4px #000; }
+
+/* PLAN TABS */
+#planTabs { display:flex; border-bottom:1px solid var(--border); margin-bottom:12px; }
+.plan-tab { font-family:var(--fd); font-size:11px; font-weight:700; padding:9px 0; background:transparent; border:none; border-bottom:2px solid transparent; color:var(--muted); cursor:pointer; letter-spacing:1px; text-transform:uppercase; flex:1; text-align:center; transition:0.15s; }
+.plan-tab:hover { color:var(--text); }
+.plan-tab-active { color:var(--green) !important; border-bottom-color:var(--green) !important; }
+
+/* TERRAIN CARDS */
+.terrain-card { border-radius:8px; padding:12px 14px; margin-bottom:8px; border:1px solid; }
+.terrain-uphill { border-color:rgba(249,115,22,0.45); background:rgba(249,115,22,0.07); }
+.terrain-down   { border-color:rgba(56,189,248,0.35);  background:rgba(56,189,248,0.05); }
+.terrain-flat   { border-color:rgba(61,220,132,0.28);  background:rgba(61,220,132,0.04); }
+.pre-uphill-badge { font-family:var(--fd); font-size:10px; font-weight:700; letter-spacing:0.5px; padding:3px 8px; border-radius:4px; display:inline-block; margin-top:6px; }
+.badge-warn   { color:var(--orange); background:rgba(249,115,22,0.13); }
+.badge-uphill { color:var(--orange); background:rgba(249,115,22,0.09); }
 </style>
 </head>
 <body>
@@ -146,7 +161,7 @@ input[type=range] { accent-color:var(--green); cursor:pointer; }
   <div style="margin-bottom:5px; display:flex; align-items:center; justify-content:space-between;">
     <div>
       <span class="kinetic-logo">KINETIC PACER</span>
-      <span style="color:var(--green); font-family:var(--fd); font-weight:700; font-size:18px; margin-left:5px;">v9.5</span>
+      <span style="color:var(--green); font-family:var(--fd); font-weight:700; font-size:18px; margin-left:5px;">v10.0</span>
     </div>
     <a href="manual.html" style="font-family:var(--fd); font-size:12px; font-weight:700; letter-spacing:1px; color:#000; background:var(--green); text-decoration:none; padding:7px 13px; border-radius:5px; white-space:nowrap; flex-shrink:0; transition:0.2s;" onmouseover="this.style.background='#5eeea0'" onmouseout="this.style.background='var(--green)'">📖 MANUAL</a>
   </div>
@@ -186,7 +201,7 @@ input[type=range] { accent-color:var(--green); cursor:pointer; }
     <div class="p-item" style="grid-column: span 2;"><div class="p-label">💊 SALT (Na⁺)</div><div class="p-val" id="preSalt" style="color:var(--purple)">0mg</div></div>
   </div></div>
 
-  <button id="calcBtn" class="btn-generate">⚡ GENERATE STRATEGY</button>
+  <button id="calcBtn" class="btn-generate" onclick="generateStrategy()">⚡ GENERATE STRATEGY</button>
 
   <div class="ref-box">
     <span style="font-family:var(--fd);font-size:10px;color:var(--muted);margin-bottom:8px;display:block">※ STRATEGY REFERENCES</span>
@@ -196,6 +211,8 @@ input[type=range] { accent-color:var(--green); cursor:pointer; }
     <a href="https://pubmed.ncbi.nlm.nih.gov/17921463/" target="_blank" class="refa ref-hydrate">• Sawka (2007): ACSM Hydration Position</a>
     <a href="https://pubmed.ncbi.nlm.nih.gov/29209579/" target="_blank" class="refa ref-salt">• Baker (2017): Sweat Na⁺ Concentration</a>
     <a href="https://pubmed.ncbi.nlm.nih.gov/26891166/" target="_blank" class="refa ref-general">• Thomas/ACSM (2016): Nutrition & Performance</a>
+    <a href="https://pubmed.ncbi.nlm.nih.gov/31480033/" target="_blank" class="refa ref-energy">• Tiller (2019): ISSN Ultra-Marathon Nutrition</a>
+    <a href="https://pubmed.ncbi.nlm.nih.gov/28177715/" target="_blank" class="refa ref-general">• Costa (2017): Gut-Training & CHO Timing</a>
   </div>
 
   <div class="copyright">
@@ -227,8 +244,13 @@ input[type=range] { accent-color:var(--green); cursor:pointer; }
         <span class="cutoff-desc">마지막 보급 후 흡수되어 피니쉬에 기여할 수 있는 시점까지만 배치됩니다.</span>
         <span id="cutoffDetail" class="cutoff-detail"></span>
       </div>
-      <span style="font-size:16px; color:var(--green); font-weight:800; border-bottom:2px solid var(--green); padding-bottom:8px; display:block; margin-bottom:15px; text-transform:uppercase;">📊 1KM TACTICAL PLAN</span>
-      <div class="intake-scroll" id="intakePanel"></div>
+      <!-- v10.0: TERRAIN / 1KM 탭 전환 — TERRAIN이 기본값 -->
+      <div id="planTabs">
+        <button id="tabTerrain" class="plan-tab plan-tab-active" onclick="switchTab('terrain')">🔺 TERRAIN</button>
+        <button id="tab1km"     class="plan-tab"               onclick="switchTab('1km')">📊 1KM PLAN</button>
+      </div>
+      <div id="terrainPanel" class="intake-scroll"></div>
+      <div id="intakePanel"  class="intake-scroll" style="display:none;"></div>
       <div class="csv-group">
         <button class="btn-csv" onclick="exportCSV('10km')">📥 EXPORT (10KM)</button>
         <button class="btn-csv" onclick="exportCSV('terrain')">📥 EXPORT (TERRAIN)</button>
@@ -448,7 +470,107 @@ function renderChart(){
 
 function mkIcon(e,b,v,u,o=0){ return L.divIcon({className:'',html:`<div class="nutrition-icon" style="transform:translate(calc(-50% + ${o}px),-100%)"><div style="text-align:center; transform:scale(var(--icon-scale))">${e}<b class="icon-badge" style="background:${b}">${v}${u}</b></div></div>`}); }
 
-document.getElementById('calcBtn').onclick = () => {
+/* ===== v10.0: TERRAIN TAB ===== */
+function switchTab(tab) {
+  const tp = document.getElementById('terrainPanel');
+  const ip = document.getElementById('intakePanel');
+  const isMobile = window.innerWidth <= 768;
+  tp.style.display = tab === 'terrain' ? '' : 'none';
+  ip.style.display  = tab === '1km' ? (isMobile ? 'grid' : '') : 'none';
+  document.getElementById('tabTerrain').classList.toggle('plan-tab-active', tab === 'terrain');
+  document.getElementById('tab1km').classList.toggle('plan-tab-active', tab === '1km');
+}
+
+/*
+ * buildTerrainBlocks()
+ * grade = Δele / Δdist (소수) — 300m 거리창 기반, GPS 밀도 무관
+ * threshold ±0.08 (±8%): KP-Runner 현장 검증 + Minetti 2002 GAP≈1.28 기준
+ * 0.5km 미만 파편 블록 → 인접 블록에 병합
+ */
+function buildTerrainBlocks(gPts, paceMinPerKm, waterRate, weightFactor, tSec, totalK, sweatNaConc) {
+  const THRESH = 0.08, WIN_M = 300, MIN_KM = 0.5;
+  /* Step1: 포인트별 타입 분류 */
+  const types = gPts.map((p, i) => {
+    let j = i;
+    while (j > 0 && (p.distKm - gPts[j-1].distKm) * 1000 < WIN_M) j--;
+    const dm = (p.distKm - gPts[j].distKm) * 1000;
+    const gr = dm > 1 ? (p.ele - gPts[j].ele) / dm : 0;
+    return gr > THRESH ? 'UPHILL' : gr < -THRESH ? 'DOWN' : 'FLAT';
+  });
+  /* Step2: 연속 같은 타입 → raw 블록 */
+  const raw = []; let si = 0;
+  for (let i = 1; i <= types.length; i++) {
+    if (i === types.length || types[i] !== types[si]) {
+      raw.push({ type: types[si], si, ei: i-1, startKm: gPts[si].distKm, endKm: gPts[i-1].distKm });
+      si = i;
+    }
+  }
+  /* Step3: 0.5km 미만 병합 */
+  let blks = raw;
+  for (let pass = 0; pass < 10 && blks.length > 1; pass++) {
+    let changed = false; const next = [];
+    for (let i = 0; i < blks.length; i++) {
+      if (blks[i].endKm - blks[i].startKm < MIN_KM) {
+        changed = true;
+        if (next.length > 0) { next[next.length-1].endKm = blks[i].endKm; next[next.length-1].ei = blks[i].ei; }
+        else if (i+1 < blks.length) { blks[i+1].startKm = blks[i].startKm; blks[i+1].si = blks[i].si; }
+        else next.push({...blks[i]});
+      } else next.push({...blks[i]});
+    }
+    blks = next; if (!changed) break;
+  }
+  /* Step4: 블록별 영양소 집계 */
+  return blks.map(b => {
+    let totC=0, totW=0, gainM=0;
+    for (let i = b.si+1; i <= b.ei; i++) {
+      const p=gPts[i], pr=gPts[i-1], d=p.distKm-pr.distKm;
+      if (d<=0) continue;
+      const gf=getGapF((p.ele-pr.ele)/(d*1000));
+      totC += Math.min(65*gf*weightFactor,85)*(tSec/(totalK*3600))*d;
+      totW += waterRate*(tSec/(totalK*3600))*d;
+      if (p.ele>pr.ele) gainM+=p.ele-pr.ele;
+    }
+    const bMin=( b.endKm-b.startKm)*paceMinPerKm;
+    const na=Math.round(Math.max(50,Math.min(800,(waterRate*(bMin/60)/1000)*sweatNaConc*0.75)));
+    return { type:b.type, startKm:b.startKm, endKm:b.endKm, gainM:Math.round(gainM),
+             estimatedMin:Math.round(bMin), carb:Math.round(totC), water:Math.round(totW), salt:na };
+  });
+}
+
+function renderTerrainTab(blocks) {
+  const panel = document.getElementById('terrainPanel');
+  const frag  = document.createDocumentFragment();
+  blocks.forEach((b, idx) => {
+    const up   = b.type==='UPHILL', dn = b.type==='DOWN';
+    const icon = up?'🔺':dn?'🔽':'➡️';
+    const cls  = up?'terrain-uphill':dn?'terrain-down':'terrain-flat';
+    const col  = up?'var(--orange)':dn?'var(--blue)':'var(--green)';
+    const lbl  = up?'UPHILL':dn?'DOWNHILL':'FLAT';
+    const gain = b.gainM>0?`+${b.gainM}m`:dn?`${b.gainM}m`:'±0m';
+    const nextUp = idx+1 < blocks.length && blocks[idx+1].type==='UPHILL';
+    const card = document.createElement('div');
+    card.className = `terrain-card ${cls}`;
+    card.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+        <span style="font-family:var(--fd);font-weight:800;font-size:13px;color:${col};letter-spacing:1px">${icon} ${lbl}</span>
+        <span style="font-size:11px;color:var(--muted)">${b.startKm.toFixed(1)} ~ ${b.endKm.toFixed(1)}km</span>
+      </div>
+      <div style="font-size:10px;color:var(--muted);margin-bottom:8px">${gain} &nbsp;•&nbsp; 약 ${b.estimatedMin}분</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <span style="font-size:12px">⚡ <b style="color:var(--orange)">${b.carb}g</b></span>
+        <span style="font-size:12px">💧 <b style="color:var(--blue)">${b.water}ml</b></span>
+        <span style="font-size:12px">💊 <b style="color:var(--purple)">${b.salt}mg</b></span>
+      </div>
+      ${up  ? '<div class="pre-uphill-badge badge-uphill">🔺 업힐 구간 — 진입 전 보급 완료 권장</div>' : ''}
+      ${nextUp && !up ? '<div class="pre-uphill-badge badge-warn">⚠️ 다음 업힐 전 보급 권고</div>' : ''}
+    `;
+    frag.appendChild(card);
+  });
+  panel.innerHTML='';
+  panel.appendChild(frag);
+}
+
+function generateStrategy() {
   if(!gPts.length) return alert("GPX REQUIRED");
   const h=+th.value||0, m=+tm.value||0, s=+ts.value||0, tSec=h*3600+m*60+s, tHr=tSec/3600, wt=+weight.value||60;
   if(tSec===0) return alert("TARGET FINISH TIME REQUIRED");
@@ -531,6 +653,11 @@ document.getElementById('calcBtn').onclick = () => {
   /* [MEDIUM-5] 루프 완료 후 Fragment를 한 번에 DOM에 삽입 — 리플로우 1회만 발생 */
   intakePanel.appendChild(_intakeFrag);
 
+  /* v10.0: terrain 블록 빌드 + terrain 탭 렌더링 */
+  const _tBlocks = buildTerrainBlocks(gPts, paceMinPerKm, waterRate, weightFactor, tSec, totalK, sweatNaConc);
+  renderTerrainTab(_tBlocks);
+  switchTab('terrain');  /* TERRAIN이 기본 탭 */
+
   /* Show cutoff info box */
   cutoffInfo.style.display = 'block';
   cutoffDetail.innerHTML = `
@@ -539,10 +666,10 @@ document.getElementById('calcBtn').onclick = () => {
     <div>🟣 마지막 염분: <b style="color:var(--purple)">${lastSalKm.toFixed(1)}km</b> <span style="color:var(--muted);font-size:11px">(피니쉬 -${(totalK-lastSalKm).toFixed(1)}km)</span></div>
   `;
   statCutoff.innerText = `GEL ${(totalK-lastGelKm).toFixed(1)}km before`;
-  
+
   lMap.fitBounds(polyline.getBounds());
-  liveUpdate();  /* refresh Pre-Start Loading UI with latest avgGapFactor */
-};
+  liveUpdate();
+}
 
 updateSweatUI(5);
 updateSaltUI(1);
