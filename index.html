@@ -147,9 +147,9 @@ input[type=range] { accent-color:var(--green); cursor:pointer; }
 
 /* TERRAIN CARDS */
 .terrain-card { border-radius:8px; padding:12px 14px; margin-bottom:8px; border:1px solid; }
-.terrain-uphill { border-color:rgba(249,115,22,0.45); background:rgba(249,115,22,0.07); }
-.terrain-down   { border-color:rgba(56,189,248,0.35);  background:rgba(56,189,248,0.05); }
-.terrain-flat   { border-color:rgba(61,220,132,0.28);  background:rgba(61,220,132,0.04); }
+.terrain-uphill { border-color:rgba(249,115,22,0.60);  background:rgba(249,115,22,0.09); }
+.terrain-down   { border-color:rgba(56,189,248,0.60);   background:rgba(56,189,248,0.09); }
+.terrain-flat   { border-color:rgba(110,122,136,0.45);  background:rgba(110,122,136,0.06); }
 .pre-uphill-badge { font-family:var(--fd); font-size:10px; font-weight:700; letter-spacing:0.5px; padding:3px 8px; border-radius:4px; display:inline-block; margin-top:6px; }
 .badge-warn   { color:var(--orange); background:rgba(249,115,22,0.13); }
 .badge-uphill { color:var(--orange); background:rgba(249,115,22,0.09); }
@@ -544,7 +544,7 @@ function renderTerrainTab(blocks) {
     const up   = b.type==='UPHILL', dn = b.type==='DOWN';
     const icon = up?'🔺':dn?'🔽':'➡️';
     const cls  = up?'terrain-uphill':dn?'terrain-down':'terrain-flat';
-    const col  = up?'var(--orange)':dn?'var(--blue)':'var(--green)';
+    const col  = up?'var(--orange)':dn?'var(--blue)':'var(--muted)';
     const lbl  = up?'UPHILL':dn?'DOWNHILL':'FLAT';
     const gain = b.gainM>0?`+${b.gainM}m`:dn?`${b.gainM}m`:'±0m';
     const nextUp = idx+1 < blocks.length && blocks[idx+1].type==='UPHILL';
