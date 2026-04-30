@@ -231,6 +231,10 @@ input[type=range] { accent-color:var(--green); cursor:pointer; }
   <div id="kp-ele-warn" style="display:none; background:rgba(249,115,22,0.12); border:1px solid var(--orange); border-radius:6px; padding:8px 14px; margin-bottom:6px; font-size:11px; color:var(--orange); font-family:var(--fd); font-weight:700; letter-spacing:0.5px;">
     ⚠️ GPX에 고도 데이터가 없습니다. 평지 기준(GAP=1.0)으로 계산됩니다.
   </div>
+  <!-- [KP-Science] GI 위험 경고 배너 — 10hr+ 장레이스 + 60g/hr+ 조합 시 Costa 2017 기반 경고 -->
+  <div id="kp-gi-warn" style="display:none; background:rgba(168,85,247,0.10); border:1px solid var(--purple); border-radius:6px; padding:8px 14px; margin-bottom:6px; font-size:11px; color:var(--purple); font-family:var(--fd); font-weight:700; letter-spacing:0.5px;">
+    🔬 장레이스 GI 주의 — 시간당 탄수화물 섭취량이 높습니다. 레이스 전 2~4주 Gut-Training을 권장합니다. (Costa 2017)
+  </div>
   <div class="content-row">
     <div id="map" data-zoom="13"></div>
     <div class="intake-panel">
@@ -249,7 +253,13 @@ input[type=range] { accent-color:var(--green); cursor:pointer; }
         <button id="tabTerrain" class="plan-tab plan-tab-active" onclick="switchTab('terrain')">🔺 TERRAIN</button>
         <button id="tab1km"     class="plan-tab"               onclick="switchTab('1km')">📊 1KM PLAN</button>
       </div>
-      <div id="terrainPanel" class="intake-scroll"></div>
+      <div id="terrainPanel" class="intake-scroll">
+        <div id="terrain-placeholder" style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;min-height:120px;color:var(--muted);font-family:var(--fd);font-size:11px;letter-spacing:1px;text-align:center;gap:8px;">
+          <span style="font-size:24px;opacity:0.4">🔺</span>
+          <span>GPX 업로드 후 GENERATE를
+누르면 지형별 전략이 표시됩니다</span>
+        </div>
+      </div>
       <div id="intakePanel"  class="intake-scroll" style="display:none;"></div>
       <div class="csv-group">
         <button class="btn-csv" onclick="exportCSV('10km')">📥 EXPORT (10KM)</button>
@@ -350,7 +360,7 @@ function liveUpdate() {
     /* Total Na replacement = total sweat loss × sweat [Na] × 0.75 recovery factor */
     preSalt.innerText=Math.round((tHr * waterPerHour / 1000) * sweatNaConc * 0.75)+"mg";
 
-    /* Pre-loading deficit check — threshold scaled by weight so lighter runners also see it when applicable */
+    /* Pre-loading deficit check */
     const threshold = Math.max(15, 20 * weightFactor);
     const deficit = Math.max(0, Math.round((demandRate - absorptionRate) * tHr));
     if(deficit > threshold) {
@@ -358,6 +368,18 @@ function liveUpdate() {
         valPreloading.innerText = deficit + "g CARB";
     } else {
         preloadingUI.style.display = 'none';
+    }
+
+    /* [KP-Science] GI 위험 경고 — 장레이스(연속 10hr+)에서
+       시간당 탄수화물 개대수가 60g/hr를 넘으면 Gut-Training 없이 GI 트러블 위험 상승.
+       Costa 2017 (PMID 28177715): 2주 복장 Gut-Training 시 GI 증상 50% 감소. */
+    const giWarn = document.getElementById('kp-gi-warn');
+    if(giWarn) {
+        if(tHr >= 10 && absorptionRate > 60) {
+            giWarn.style.display = 'block';
+        } else {
+            giWarn.style.display = 'none';
+        }
     }
 }
 
@@ -521,7 +543,7 @@ function buildTerrainBlocks(gPts, paceMinPerKm, waterRate, weightFactor, tSec, t
   }
   /* Step4: 블록별 영양소 집계 */
   return blks.map(b => {
-    let totC=0, totW=0, gainM=0;
+    let totC=0, totW=0, gainM=0, lossM=0, totGf=0, gfCnt=0;
     for (let i = b.si+1; i <= b.ei; i++) {
       const p=gPts[i], pr=gPts[i-1], d=p.distKm-pr.distKm;
       if (d<=0) continue;
@@ -529,10 +551,16 @@ function buildTerrainBlocks(gPts, paceMinPerKm, waterRate, weightFactor, tSec, t
       totC += Math.min(65*gf*weightFactor,85)*(tSec/(totalK*3600))*d;
       totW += waterRate*(tSec/(totalK*3600))*d;
       if (p.ele>pr.ele) gainM+=p.ele-pr.ele;
+      else lossM+=pr.ele-p.ele;
+      totGf+=gf; gfCnt++;
     }
-    const bMin=( b.endKm-b.startKm)*paceMinPerKm;
+    /* [BUG-3 FIX] 업힐 예상시간 GAP factor 보정 — 평지 페이스 사용 시 50%+ 과소평가 발생.
+       avgGf로 보정된 실제 업힐 소요시간 제공. */
+    const avgGf = gfCnt > 0 ? totGf/gfCnt : 1.0;
+    const bMin = (b.endKm-b.startKm) * paceMinPerKm * avgGf;
     const na=Math.round(Math.max(50,Math.min(800,(waterRate*(bMin/60)/1000)*sweatNaConc*0.75)));
-    return { type:b.type, startKm:b.startKm, endKm:b.endKm, gainM:Math.round(gainM),
+    return { type:b.type, startKm:b.startKm, endKm:b.endKm,
+             gainM:Math.round(gainM), lossM:Math.round(lossM),
              estimatedMin:Math.round(bMin), carb:Math.round(totC), water:Math.round(totW), salt:na };
   });
 }
@@ -546,7 +574,11 @@ function renderTerrainTab(blocks) {
     const cls  = up?'terrain-uphill':dn?'terrain-down':'terrain-flat';
     const col  = up?'var(--orange)':dn?'var(--blue)':'var(--muted)';
     const lbl  = up?'UPHILL':dn?'DOWNHILL':'FLAT';
-    const gain = b.gainM>0?`+${b.gainM}m`:dn?`${b.gainM}m`:'±0m';
+    /* [BUG-2 FIX] DOWN 블록은 lossM(하강 고도) 표시, UPHILL은 gainM, FLAT은 넷값 */
+    const gain = up  ? `+${b.gainM}m`
+               : dn  ? `-${b.lossM}m`
+               : (b.gainM - b.lossM >= 0 ? `+${b.gainM-b.lossM}m` : `${b.gainM-b.lossM}m`);
+    /* [BUG-1 FIX] 다음 입력 업힐인 경우만 배지 표시 — UPHILL 카드 자체에는 진입후라 글주의 */
     const nextUp = idx+1 < blocks.length && blocks[idx+1].type==='UPHILL';
     const card = document.createElement('div');
     card.className = `terrain-card ${cls}`;
@@ -561,7 +593,6 @@ function renderTerrainTab(blocks) {
         <span style="font-size:12px">💧 <b style="color:var(--blue)">${b.water}ml</b></span>
         <span style="font-size:12px">💊 <b style="color:var(--purple)">${b.salt}mg</b></span>
       </div>
-      ${up  ? '<div class="pre-uphill-badge badge-uphill">🔺 업힐 구간 — 진입 전 보급 완료 권장</div>' : ''}
       ${nextUp && !up ? '<div class="pre-uphill-badge badge-warn">⚠️ 다음 업힐 전 보급 권고</div>' : ''}
     `;
     frag.appendChild(card);
