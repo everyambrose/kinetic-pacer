@@ -650,79 +650,35 @@ function generateStrategy() {
     setTimeout(()=>lMap.invalidateSize(), 1000);
   }
   if(markerGroup) markerGroup.clearLayers(); else markerGroup=L.layerGroup().addTo(lMap);
-  if(polyline) lMap.removeLayer(polyline); polyline=L.polyline(gPts.map(p=>[p.lat,p.lon]),{color:'#3ddc84',weight:3.5}).addTo(lMap);
+  /* v10.2: 단색 polyline 제거 — terrain 블록별 컬러 세그먼트로 대체 */
+  if(polyline) { lMap.removeLayer(polyline); polyline=null; }
 
   L.marker([gPts[0].lat, gPts[0].lon], {icon: mkIcon('🚩', 'var(--green)', 'LOAD', '')}).addTo(markerGroup);
   L.marker([gPts[gPts.length-1].lat, gPts[gPts.length-1].lon], {icon: mkIcon('🏁', 'var(--red)', 'FINISH', '')}).addTo(markerGroup);
 
-  let lWat=0.1, lSal=0.1, aC=0, aW=0, kAC=0, kAW=0, kAA=0, kAS=0;
-  let lastGelKm=0, lastWatKm=0, lastSalKm=0;
+  let kAC=0, kAW=0, kAA=0, kAS=0, lSal=0.1;
   intakePanel.innerHTML=''; lastResultData = [];
 
-  /* v10.1: GEL terrain 기반 전환 — buildTerrainBlocks를 루프 전에 호출하여 gelTriggers 생성 */
+  /* v10.2: buildTerrainBlocks 루프 전 호출 */
   const _tBlocks = buildTerrainBlocks(gPts, paceMinPerKm, waterRate, weightFactor, tSec, totalK, sweatNaConc);
 
-  /* GEL 트리거 km 배열 생성
-     알고리즘:
-       1. 각 테레인 블록 끝점(다음 블록 진입 전)을 트리거로 등록
-       2. 블록 길이 > 12km 시 등간 방식으로 중간 트리거 추가 (혁당 유지)
-       3. 두 트리거 간각 < 8km이면 인접 트리거와 병합 (과일 세분화 방지) */
-  const _gelTriggers = (() => {
-    const MAX_INT = 12.0, MIN_GAP = 8.0;
-    const raw = [];
-    _tBlocks.forEach((b, idx) => {
-      const len = b.endKm - b.startKm;
-      if (len > MAX_INT) {
-        const splits = Math.ceil(len / MAX_INT);
-        for (let s = 1; s < splits; s++) raw.push(b.startKm + (len / splits) * s);
-      }
-      if (idx < _tBlocks.length - 1) raw.push(b.endKm);
-    });
-    raw.sort((a, b) => a - b);
-    if (!raw.length) return [];
-    const out = [raw[0]];
-    for (let i = 1; i < raw.length; i++) {
-      if (raw[i] - out[out.length - 1] >= MIN_GAP) out.push(raw[i]);
-    }
-    return out;
-  })();
-  let _gelTrigIdx = 0;
-
-  /* [MEDIUM-5] DocumentFragment 선언 — 루프 내 DOM 조작 대신 가상 노드에 누적 */
+  /* [MEDIUM-5] DocumentFragment */
   const _intakeFrag = document.createDocumentFragment();
 
   for(let i=1; i<gPts.length; i++){
     const p=gPts[i], pr=gPts[i-1], d=p.distKm-pr.distKm; if(d<=0)continue;
     const gf=getGapF((p.ele-pr.ele)/(d*1000));
-    const dC = Math.min(65 * gf * weightFactor, 85) * (tSec/(totalK*3600)) * d;
-    const dW = waterRate * (tSec/(totalK*3600)) * d;
-    aC+=dC; aW+=dW; kAC+=dC; kAW+=dW; if(p.ele>pr.ele) kAA+=p.ele-pr.ele;
+    const dC = Math.min(65*gf*weightFactor,85)*(tSec/(totalK*3600))*d;
+    const dW = waterRate*(tSec/(totalK*3600))*d;
+    kAC+=dC; kAW+=dW; if(p.ele>pr.ele) kAA+=p.ele-pr.ele;
 
-    const remainingKm = totalK - p.distKm;
-    const remainingMin = remainingKm * paceMinPerKm;
+    const remainingMin = (totalK-p.distKm)*paceMinPerKm;
 
-    const makeM=(icon,color,val,title,unit,offset)=>{ const m=L.marker([p.lat,p.lon],{icon:mkIcon(icon,color,Math.round(val),unit,offset)}); m.on('click',()=>{selectedIndex=i;chart.update();}); m.bindPopup(`<div style="color:#000; font-size:12px;"><b>${title}</b><br>DIST: ${p.distKm.toFixed(1)}km | REMAIN: ${remainingMin.toFixed(0)}min<br>TAKE: <b>${Math.round(val)}${unit}</b></div>`).addTo(markerGroup); };
-
-    /* GEL: terrain 기반 트리거 — 블록 경계 + 12km 쉤 중간점, 흥수 커트오프 적용 (v10.1)
-       기존 km 인터벌 방식에서 terrain 블록 경계 방식으로 전환.
-       최소 5g 이상 누적되어야 마커 표시 (개 일부만 먹는 상황 제외). */
-    if(_gelTrigIdx < _gelTriggers.length && p.distKm >= _gelTriggers[_gelTrigIdx] && remainingMin >= CUTOFF_GEL_MIN) {
-        if(aC > 5) { makeM('⚡','var(--orange)', aC, 'GEL', 'g', 0); lastGelKm = p.distKm; }
-        aC = 0; _gelTrigIdx++;
-    }
-    /* WATER: requires >=15 min remaining */
-    if(p.distKm>=lWat+wG && remainingMin >= CUTOFF_WATER_MIN && wG>0){
-        makeM('💧','var(--blue)',aW,'WATER','ml',35); aW=0; lWat=p.distKm; lastWatKm=p.distKm;
-    }
-    /* SALT: requires >=20 min remaining, dose calculated from sweat loss since last intake */
-    if(p.distKm>=lSal+sG && remainingMin >= CUTOFF_SALT_MIN && sG>0){
-        const distSinceLastSalt = p.distKm - lSal;
-        const intervalHrSalt = (distSinceLastSalt * paceMinPerKm) / 60;
-        const sweatLostMl = waterRate * intervalHrSalt;
-        const naDose = Math.round(Math.max(50, Math.min(800, (sweatLostMl / 1000) * sweatNaConc * 0.75)));
-        makeM('💊','var(--purple)', naDose, 'SALT','mg',-35);
-        kAS += naDose;
-        lSal=p.distKm; lastSalKm=p.distKm;
+    /* SALT 누적 (마커 없음, exportCSV 데이터용 유지) */
+    if(p.distKm >= lSal+sG && remainingMin >= CUTOFF_SALT_MIN && sG>0) {
+      const dSalt=p.distKm-lSal, iHr=(dSalt*paceMinPerKm)/60;
+      kAS += Math.round(Math.max(50,Math.min(800,(waterRate*iHr/1000)*sweatNaConc*0.75)));
+      lSal = p.distKm;
     }
     
     if(Math.floor(p.distKm)>Math.floor(pr.distKm)){
@@ -741,20 +697,36 @@ function generateStrategy() {
   /* [MEDIUM-5] 루프 완료 후 Fragment를 한 번에 DOM에 삽입 — 리플로우 1회만 발생 */
   intakePanel.appendChild(_intakeFrag);
 
-  /* v10.1: terrain 탭 렌더링 (_tBlocks는 루프 전이미 산출됨) */
+  /* v10.2: terrain 컬러 폴리라인 + 중간점 마커 + 클릭 팝업 */
+  const mkTBI = (lbl, col) => L.divIcon({
+    className: '',
+    html: `<div style="background:${col};color:#fff;font-family:var(--fd);font-size:10px;font-weight:700;padding:4px 8px;border-radius:6px;box-shadow:0 2px 8px rgba(0,0,0,0.5);white-space:nowrap;letter-spacing:0.5px">${lbl}</div>`
+  });
+  _tBlocks.forEach(b => {
+    const bPts = gPts.filter(p => p.distKm >= b.startKm && p.distKm <= b.endKm);
+    if (bPts.length < 2) return;
+    const up=b.type==='UPHILL', dn=b.type==='DOWN';
+    const col  = up?'#f97316':dn?'#38bdf8':'#8a95a0';
+    const icon = up?'🔺':dn?'🔽':'➡️';
+    L.polyline(bPts.map(p=>[p.lat,p.lon]),{color:col,weight:up?5.5:4.5,opacity:0.88}).addTo(markerGroup);
+    const mid = bPts[Math.floor(bPts.length/2)];
+    const gainStr = up?`+${b.gainM}m`:dn?`-${b.lossM}m`:`±${Math.abs(b.gainM-b.lossM)}m`;
+    L.marker([mid.lat,mid.lon],{icon:mkTBI(`${icon} ${b.type}`,col)})
+     .bindPopup(`<div style="color:#111;font-size:12px;min-width:175px;line-height:1.8"><b style="font-size:13px">${icon} ${b.type}</b><br><span style="font-size:10px;color:#666">${b.startKm.toFixed(1)} ~ ${b.endKm.toFixed(1)}km &nbsp;•&nbsp; ${gainStr} &nbsp;•&nbsp; 약${b.estimatedMin}분</span><hr style="border:none;border-top:1px solid #ddd;margin:5px 0">⚡ <b>${b.carb}g</b> &nbsp; 💧 <b>${b.water}ml</b> &nbsp; 💊 <b>${b.salt}mg</b></div>`)
+     .addTo(markerGroup);
+  });
+
   renderTerrainTab(_tBlocks);
   switchTab('terrain');
 
-  /* Show cutoff info box */
+  /* 커트오프 정보 — terrain 블록 기준으로 업데이트 */
+  const _cutKm = totalK - (CUTOFF_GEL_MIN / paceMinPerKm);
+  const _lastB = [..._tBlocks].reverse().find(b => b.startKm < _cutKm) || _tBlocks[_tBlocks.length-1];
+  statCutoff.innerText = `LAST ZONE ${_lastB.startKm.toFixed(1)}~${_lastB.endKm.toFixed(1)}km`;
   cutoffInfo.style.display = 'block';
-  cutoffDetail.innerHTML = `
-    <div>🔶 마지막 젤: <b style="color:var(--orange)">${lastGelKm.toFixed(1)}km</b> <span style="color:var(--muted);font-size:11px">(피니쉬 -${(totalK-lastGelKm).toFixed(1)}km)</span></div>
-    <div>🔷 마지막 물: <b style="color:var(--blue)">${lastWatKm.toFixed(1)}km</b> <span style="color:var(--muted);font-size:11px">(피니쉬 -${(totalK-lastWatKm).toFixed(1)}km)</span></div>
-    <div>🟣 마지막 염분: <b style="color:var(--purple)">${lastSalKm.toFixed(1)}km</b> <span style="color:var(--muted);font-size:11px">(피니쉬 -${(totalK-lastSalKm).toFixed(1)}km)</span></div>
-  `;
-  statCutoff.innerText = `GEL ${(totalK-lastGelKm).toFixed(1)}km before`;
+  cutoffDetail.innerHTML = `<div>🔶 마지막 영양 구간: <b style="color:var(--orange)">${_lastB.startKm.toFixed(1)}km ~ ${_lastB.endKm.toFixed(1)}km</b></div><div style="font-size:10px;color:var(--muted);margin-top:4px">이후 구간(피니쉬 ${CUTOFF_GEL_MIN}분 이내)은 흡수 커트오프 — 추가 보급 없이 마무리하세요.</div>`;
 
-  lMap.fitBounds(polyline.getBounds());
+  lMap.fitBounds(L.latLngBounds(gPts.map(p=>[p.lat,p.lon])));
   liveUpdate();
 }
 
