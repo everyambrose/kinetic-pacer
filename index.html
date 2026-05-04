@@ -761,6 +761,57 @@ function generateStrategy() {
      .addTo(markerGroup);
   });
 
+  /* v10.5: 학술 근거 기반 보급 권장 마커 (Jeukendrup 2014, Tiller 2019)
+     배치 규칙:
+       1. 업힐 직전 블록 끝 — 고강도 전 CHO 선행 보급 (20-30분 선행)
+       2. 15km 이상 평지/다운힐 구간 중간 — 혈당 유지
+     표시: 이 지점부터 다음 보급 포인트까지 필요한 CHO / 수분 / Na+ */
+  const _supplyKms = [];
+  _tBlocks.forEach((b, idx) => {
+    if (b.endKm <= 3 || b.startKm >= _cutKm) return;
+    const nb = _tBlocks[idx + 1];
+    if (nb && nb.type === 'UPHILL' && nb.startKm < _cutKm) {
+      _supplyKms.push({ km: b.endKm, reason: 'uphill' });
+    }
+    const bLen = b.endKm - b.startKm;
+    if (b.type !== 'UPHILL' && bLen > 15) {
+      const mid2 = b.startKm + bLen / 2;
+      if (mid2 < _cutKm) _supplyKms.push({ km: mid2, reason: 'flat' });
+    }
+  });
+  _supplyKms.sort((a, b) => a.km - b.km);
+
+  _supplyKms.forEach((s, i) => {
+    const nextKm = i < _supplyKms.length - 1 ? _supplyKms[i + 1].km : Math.min(_cutKm, totalK);
+    let cumC = 0, cumW = 0;
+    gPts.forEach((p, pi) => {
+      if (pi === 0) return;
+      const pr = gPts[pi - 1], d = p.distKm - pr.distKm;
+      if (d <= 0 || pr.distKm < s.km || p.distKm > nextKm) return;
+      const gf = getGapF((p.ele - pr.ele) / (d * 1000));
+      cumC += Math.min(65 * gf * weightFactor, 85) * (tSec / (totalK * 3600)) * d;
+      cumW += waterRate * (tSec / (totalK * 3600)) * d;
+    });
+    const secHr = (nextKm - s.km) * paceMinPerKm / 60;
+    const cumSalt = Math.round(Math.max(50, Math.min(800, (waterRate * secHr / 1000) * sweatNaConc * 0.75)));
+    let closest = gPts[1];
+    gPts.forEach(p => { if (Math.abs(p.distKm - s.km) < Math.abs(closest.distKm - s.km)) closest = p; });
+    const closestIdx = gPts.indexOf(closest);
+    const bc = s.reason === 'uphill' ? '#f97316' : '#3ddc84';
+    const lbl = s.reason === 'uphill' ? '⬆ FUEL UP' : '⚡ FUEL';
+    const ref = s.reason === 'uphill' ? 'Jeukendrup 2014 · 업힐 전 선행 보급' : 'Jeukendrup 2011 · 혈당 유지 보급';
+    const supIcon = L.divIcon({
+      className: '',
+      html: `<div style="background:#0f172a;border:2px solid ${bc};color:#fff;font-family:var(--fd);font-size:9px;font-weight:700;padding:5px 8px;border-radius:8px;box-shadow:0 3px 10px rgba(0,0,0,0.8);white-space:nowrap;text-align:center;line-height:1.6"><div style="color:${bc};font-size:9px;margin-bottom:1px">${lbl}</div>⚡${Math.round(cumC)}g &nbsp;💧${Math.round(cumW)}ml &nbsp;💊${cumSalt}mg</div>`,
+      iconAnchor: [55, 14]
+    });
+    const sPop = `<div style="color:#111;font-size:12px;min-width:185px;line-height:1.8"><b style="font-size:13px">${lbl} · ${s.km.toFixed(1)}km</b><br><span style="font-size:10px;color:#666">다음 보급까지 (${s.km.toFixed(1)} ~ ${nextKm.toFixed(1)}km)</span><hr style="border:none;border-top:1px solid #ddd;margin:5px 0">⚡ <b>${Math.round(cumC)}g</b> &nbsp; 💧 <b>${Math.round(cumW)}ml</b> &nbsp; 💊 <b>${cumSalt}mg</b><br><span style="font-size:9px;color:#888">${ref}</span></div>`;
+    L.marker([closest.lat, closest.lon], {icon: supIcon})
+     .on('click', () => { if(closestIdx >= 0){ selectedIndex = closestIdx; chart.update(); } })
+     .bindPopup(sPop)
+     .addTo(markerGroup);
+  });
+
   renderTerrainTab(_tBlocks);
   switchTab('terrain');
 
