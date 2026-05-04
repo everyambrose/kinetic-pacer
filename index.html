@@ -697,75 +697,63 @@ function generateStrategy() {
   /* [MEDIUM-5] 루프 완료 후 Fragment를 한 번에 DOM에 삽입 — 리플로우 1회만 발생 */
   intakePanel.appendChild(_intakeFrag);
 
-  /* v10.4: 화살표 제거 · START / FINISH 존 처리 · 차트 하이라이트 */
-  const mkTBI = (lbl, col) => L.divIcon({
+  /* v10.6: 지도 정리 — 폴리라인 클릭으로 terrain 정보 표시, 배지 마커 최소화 */
+  const mkSmallBadge = (lbl, col) => L.divIcon({
     className: '',
-    html: `<div style="background:${col};color:#fff;font-family:var(--fd);font-size:10px;font-weight:700;padding:4px 8px;border-radius:6px;box-shadow:0 2px 8px rgba(0,0,0,0.5);white-space:nowrap;letter-spacing:0.5px">${lbl}</div>`
+    html: `<div style="background:${col};color:#fff;font-family:var(--fd);font-size:9px;font-weight:700;padding:3px 6px;border-radius:4px;box-shadow:0 1px 5px rgba(0,0,0,0.5);white-space:nowrap;opacity:0.92">${lbl}</div>`
   });
 
-  /* 커트오프 km 위치 — 이후 cutoff 표시에서도 공유 */
+  /* 커트오프 km 위치 */
   const _cutKm = totalK - (CUTOFF_GEL_MIN / paceMinPerKm);
 
   _tBlocks.forEach((b, bIdx) => {
     const bPts = gPts.filter(p => p.distKm >= b.startKm && p.distKm <= b.endKm);
     if (bPts.length < 2) return;
-    const up = b.type==='UPHILL', dn = b.type==='DOWN';
+    const up = b.type === 'UPHILL', dn = b.type === 'DOWN';
     const isFirst  = bIdx === 0;
     const isCutoff = b.startKm >= _cutKm;
     const col  = up ? '#f97316' : dn ? '#38bdf8' : '#8a95a0';
     const icon = up ? '🔺' : dn ? '🔽' : '➡️';
-
-    /* 컬러 폴리라인 — START 반투명, CUTOFF 점선+반투명 */
-    L.polyline(bPts.map(p=>[p.lat,p.lon]), {
-      color: col,
-      weight: up ? 5.5 : 4.5,
-      opacity: isCutoff ? 0.32 : isFirst ? 0.52 : 0.88,
-      dashArray: isCutoff ? '7 5' : null
-    }).addTo(markerGroup);
-
-    /* 마커 레이블 + 팝업 분기 */
-    const mid = bPts[Math.floor(bPts.length/2)];
+    const gainStr = up ? `+${b.gainM}m` : dn ? `-${b.lossM}m` : `+/-${Math.abs(b.gainM - b.lossM)}m`;
+    const mid = bPts[Math.floor(bPts.length / 2)];
     const midIdx = gPts.indexOf(mid);
-    const gainStr = up ? `+${b.gainM}m` : dn ? `-${b.lossM}m` : `+/-${Math.abs(b.gainM-b.lossM)}m`;
-    let badgeLbl, badgeCol, popup;
 
+    /* 팝업 내용 */
+    let popupHtml;
     if (isFirst) {
-      badgeLbl  = '⚡ PRE-LOAD';
-      badgeCol  = '#3ddc84';
-      popup = '<div style="color:#111;font-size:12px;min-width:180px;line-height:1.8">'
+      popupHtml = '<div style="color:#111;font-size:12px;min-width:180px;line-height:1.8">'
         + '<b style="font-size:13px">⚡ PRE-LOAD ZONE</b><br>'
         + `<span style="font-size:10px;color:#666">${b.startKm.toFixed(1)} ~ ${b.endKm.toFixed(1)}km &bull; ${gainStr} &bull; 약${b.estimatedMin}분</span>`
         + '<hr style="border:none;border-top:1px solid #ddd;margin:5px 0">'
         + '<span style="font-size:11px;color:#3ddc84">Pre-loading 커버 구간</span><br>'
-        + '<span style="font-size:11px;color:#555">에너지 충전 상태로 시작합니다. 별도 보급 없이 페이스를 유지하세요.</span>'
-        + '</div>';
+        + '<span style="font-size:11px;color:#555">에너지 충전 상태 시작. 별도 보급 없이 페이스를 유지하세요.</span></div>';
     } else if (isCutoff) {
-      badgeLbl  = '⏱ CUTOFF';
-      badgeCol  = '#888';
-      popup = '<div style="color:#111;font-size:12px;min-width:180px;line-height:1.8">'
+      popupHtml = '<div style="color:#111;font-size:12px;min-width:180px;line-height:1.8">'
         + '<b style="font-size:13px">⏱ CUTOFF ZONE</b><br>'
         + `<span style="font-size:10px;color:#666">${b.startKm.toFixed(1)} ~ ${b.endKm.toFixed(1)}km &bull; ${gainStr} &bull; 약${b.estimatedMin}분</span>`
         + '<hr style="border:none;border-top:1px solid #ddd;margin:5px 0">'
-        + '<span style="font-size:11px;color:#c00">흡수 커트오프 구간 — 추가 보급 없이 마무리</span><br>'
-        + '<span style="font-size:11px;color:#555">남은 에너지로 피니쉬까지 페이싱에 집중하세요.</span>'
-        + '</div>';
+        + '<span style="font-size:11px;color:#c00">흡수 커트오프 — 추가 보급 없이 마무리</span><br>'
+        + '<span style="font-size:11px;color:#555">남은 에너지로 피니쉬까지 페이싱에 집중.</span></div>';
     } else {
-      badgeLbl  = `${icon} ${b.startKm.toFixed(1)}km`;
-      badgeCol  = col;
-      popup = `<div style="color:#111;font-size:12px;min-width:175px;line-height:1.8"><b style="font-size:13px">${icon} ${b.type}</b><br><span style="font-size:10px;color:#666">${b.startKm.toFixed(1)} ~ ${b.endKm.toFixed(1)}km &nbsp;&bull;&nbsp; ${gainStr} &nbsp;&bull;&nbsp; 약${b.estimatedMin}분</span><hr style="border:none;border-top:1px solid #ddd;margin:5px 0">⚡ <b>${b.carb}g</b> &nbsp; 💧 <b>${b.water}ml</b> &nbsp; 💊 <b>${b.salt}mg</b></div>`;
+      popupHtml = `<div style="color:#111;font-size:12px;min-width:175px;line-height:1.8"><b style="font-size:13px">${icon} ${b.type}</b><br><span style="font-size:10px;color:#666">${b.startKm.toFixed(1)} ~ ${b.endKm.toFixed(1)}km &nbsp;&bull;&nbsp; ${gainStr} &nbsp;&bull;&nbsp; 약${b.estimatedMin}분</span><hr style="border:none;border-top:1px solid #ddd;margin:5px 0">⚡ <b>${b.carb}g</b> &nbsp; 💧 <b>${b.water}ml</b> &nbsp; 💊 <b>${b.salt}mg</b></div>`;
     }
 
-    L.marker([mid.lat, mid.lon], {icon: mkTBI(badgeLbl, badgeCol)})
-     .on('click', () => { if(midIdx >= 0){ selectedIndex = midIdx; chart.update(); } })
-     .bindPopup(popup)
-     .addTo(markerGroup);
+    /* 클릭 가능한 폴리라인 — terrain 배지 마커 없음 */
+    L.polyline(bPts.map(p => [p.lat, p.lon]), {
+      color: col, weight: up ? 5.5 : 4.5,
+      opacity: isCutoff ? 0.32 : isFirst ? 0.52 : 0.88,
+      dashArray: isCutoff ? '7 5' : null
+    }).on('click', (e) => {
+      if (midIdx >= 0) { selectedIndex = midIdx; chart.update(); }
+      L.popup().setLatLng(e.latlng).setContent(popupHtml).openOn(lMap);
+    }).addTo(markerGroup);
+
+    /* PRE-LOAD / CUTOFF 전용 소형 배지만 표시 */
+    if (isFirst)  L.marker([mid.lat, mid.lon], {icon: mkSmallBadge('⚡ PRE-LOAD', '#3ddc84')}).addTo(markerGroup);
+    if (isCutoff) L.marker([mid.lat, mid.lon], {icon: mkSmallBadge('⏱ CUTOFF', '#666')}).addTo(markerGroup);
   });
 
-  /* v10.5: 학술 근거 기반 보급 권장 마커 (Jeukendrup 2014, Tiller 2019)
-     배치 규칙:
-       1. 업힐 직전 블록 끝 — 고강도 전 CHO 선행 보급 (20-30분 선행)
-       2. 15km 이상 평지/다운힐 구간 중간 — 혈당 유지
-     표시: 이 지점부터 다음 보급 포인트까지 필요한 CHO / 수분 / Na+ */
+  /* v10.6: 보급 마커 — 작은 원형 아이콘만 표시, 상세는 클릭 팝업 */
   const _supplyKms = [];
   _tBlocks.forEach((b, idx) => {
     if (b.endKm <= 3 || b.startKm >= _cutKm) return;
@@ -798,19 +786,23 @@ function generateStrategy() {
     gPts.forEach(p => { if (Math.abs(p.distKm - s.km) < Math.abs(closest.distKm - s.km)) closest = p; });
     const closestIdx = gPts.indexOf(closest);
     const bc = s.reason === 'uphill' ? '#f97316' : '#3ddc84';
-    const lbl = s.reason === 'uphill' ? '⬆ FUEL UP' : '⚡ FUEL';
+    const em = s.reason === 'uphill' ? '⬆' : '⚡';
     const ref = s.reason === 'uphill' ? 'Jeukendrup 2014 · 업힐 전 선행 보급' : 'Jeukendrup 2011 · 혈당 유지 보급';
+
+    /* 원형 소형 아이콘 — 텍스트 없음, 클릭 시 팝업 */
     const supIcon = L.divIcon({
       className: '',
-      html: `<div style="background:#0f172a;border:2px solid ${bc};color:#fff;font-family:var(--fd);font-size:9px;font-weight:700;padding:5px 8px;border-radius:8px;box-shadow:0 3px 10px rgba(0,0,0,0.8);white-space:nowrap;text-align:center;line-height:1.6"><div style="color:${bc};font-size:9px;margin-bottom:1px">${lbl}</div>⚡${Math.round(cumC)}g &nbsp;💧${Math.round(cumW)}ml &nbsp;💊${cumSalt}mg</div>`,
-      iconAnchor: [55, 14]
+      html: `<div style="background:${bc};color:#fff;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;box-shadow:0 2px 8px rgba(0,0,0,0.7);border:2px solid rgba(255,255,255,0.25)">${em}</div>`,
+      iconSize: [26, 26], iconAnchor: [13, 13]
     });
-    const sPop = `<div style="color:#111;font-size:12px;min-width:185px;line-height:1.8"><b style="font-size:13px">${lbl} · ${s.km.toFixed(1)}km</b><br><span style="font-size:10px;color:#666">다음 보급까지 (${s.km.toFixed(1)} ~ ${nextKm.toFixed(1)}km)</span><hr style="border:none;border-top:1px solid #ddd;margin:5px 0">⚡ <b>${Math.round(cumC)}g</b> &nbsp; 💧 <b>${Math.round(cumW)}ml</b> &nbsp; 💊 <b>${cumSalt}mg</b><br><span style="font-size:9px;color:#888">${ref}</span></div>`;
+    const sPop = `<div style="color:#111;font-size:12px;min-width:185px;line-height:1.8"><b style="font-size:13px">${em} SUPPLY · ${s.km.toFixed(1)}km</b><br><span style="font-size:10px;color:#666">다음 보급까지 (${s.km.toFixed(1)} ~ ${nextKm.toFixed(1)}km)</span><hr style="border:none;border-top:1px solid #ddd;margin:5px 0">⚡ <b>${Math.round(cumC)}g</b> &nbsp; 💧 <b>${Math.round(cumW)}ml</b> &nbsp; 💊 <b>${cumSalt}mg</b><br><span style="font-size:9px;color:#888">${ref}</span></div>`;
     L.marker([closest.lat, closest.lon], {icon: supIcon})
      .on('click', () => { if(closestIdx >= 0){ selectedIndex = closestIdx; chart.update(); } })
      .bindPopup(sPop)
      .addTo(markerGroup);
   });
+
+
 
   renderTerrainTab(_tBlocks);
   switchTab('terrain');
