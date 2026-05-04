@@ -753,21 +753,19 @@ function generateStrategy() {
     if (isCutoff) L.marker([mid.lat, mid.lon], {icon: mkSmallBadge('⏱ CUTOFF', '#666')}).addTo(markerGroup);
   });
 
-  /* v10.6: 보급 마커 — 작은 원형 아이콘만 표시, 상세는 클릭 팝업 */
+  /* v10.7: 보급 트리거 — 지형 타입 무관, 7km 이상 경과 시 terrain 경계에서 트리거
+     (업힐만이 아니라 평지/다운힐도 에너지 소모가 지속됨) */
+  const MIN_SUPPLY_GAP = 7.0;
   const _supplyKms = [];
+  let _lastTrigKm = 0;
   _tBlocks.forEach((b, idx) => {
-    if (b.endKm <= 3 || b.startKm >= _cutKm) return;
-    const nb = _tBlocks[idx + 1];
-    if (nb && nb.type === 'UPHILL' && nb.startKm < _cutKm) {
-      _supplyKms.push({ km: b.endKm, reason: 'uphill' });
-    }
-    const bLen = b.endKm - b.startKm;
-    if (b.type !== 'UPHILL' && bLen > 15) {
-      const mid2 = b.startKm + bLen / 2;
-      if (mid2 < _cutKm) _supplyKms.push({ km: mid2, reason: 'flat' });
+    if (b.endKm <= 3 || b.endKm > _cutKm) return;
+    if (b.endKm - _lastTrigKm >= MIN_SUPPLY_GAP) {
+      const nb = _tBlocks[idx + 1];
+      _supplyKms.push({ km: b.endKm, nextBlock: nb });
+      _lastTrigKm = b.endKm;
     }
   });
-  _supplyKms.sort((a, b) => a.km - b.km);
 
   _supplyKms.forEach((s, i) => {
     const nextKm = i < _supplyKms.length - 1 ? _supplyKms[i + 1].km : Math.min(_cutKm, totalK);
@@ -785,17 +783,26 @@ function generateStrategy() {
     let closest = gPts[1];
     gPts.forEach(p => { if (Math.abs(p.distKm - s.km) < Math.abs(closest.distKm - s.km)) closest = p; });
     const closestIdx = gPts.indexOf(closest);
-    const bc = s.reason === 'uphill' ? '#f97316' : '#3ddc84';
-    const em = s.reason === 'uphill' ? '⬆' : '⚡';
-    const ref = s.reason === 'uphill' ? 'Jeukendrup 2014 · 업힐 전 선행 보급' : 'Jeukendrup 2011 · 혈당 유지 보급';
 
-    /* 원형 소형 아이콘 — 텍스트 없음, 클릭 시 팝업 */
+    /* 다음 terrain 블록 정보 — "어느 구간 대비" 문구 생성 */
+    const nb = s.nextBlock;
+    let nextDesc = '피니쉬까지 마무리 구간';
+    let bc = '#8a95a0', em = '⚡';
+    if (nb) {
+      const nUp = nb.type === 'UPHILL', nDn = nb.type === 'DOWN';
+      const nIcon = nUp ? '⬆' : nDn ? '⬇' : '➡';
+      const nGain = nUp ? `+${nb.gainM}m` : nDn ? `-${nb.lossM}m` : `+/-${Math.abs(nb.gainM - nb.lossM)}m`;
+      nextDesc = `${nIcon} ${nb.type} ${nb.startKm.toFixed(1)}~${nb.endKm.toFixed(1)}km 대비 (${nGain} · 약${nb.estimatedMin}분)`;
+      bc = nUp ? '#f97316' : nDn ? '#38bdf8' : '#8a95a0';
+      em = nIcon;
+    }
+
     const supIcon = L.divIcon({
       className: '',
       html: `<div style="background:${bc};color:#fff;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;box-shadow:0 2px 8px rgba(0,0,0,0.7);border:2px solid rgba(255,255,255,0.25)">${em}</div>`,
       iconSize: [26, 26], iconAnchor: [13, 13]
     });
-    const sPop = `<div style="color:#111;font-size:12px;min-width:185px;line-height:1.8"><b style="font-size:13px">${em} SUPPLY · ${s.km.toFixed(1)}km</b><br><span style="font-size:10px;color:#666">다음 보급까지 (${s.km.toFixed(1)} ~ ${nextKm.toFixed(1)}km)</span><hr style="border:none;border-top:1px solid #ddd;margin:5px 0">⚡ <b>${Math.round(cumC)}g</b> &nbsp; 💧 <b>${Math.round(cumW)}ml</b> &nbsp; 💊 <b>${cumSalt}mg</b><br><span style="font-size:9px;color:#888">${ref}</span></div>`;
+    const sPop = `<div style="color:#111;font-size:12px;min-width:190px;line-height:1.8"><b style="font-size:13px">⚡ SUPPLY · ${s.km.toFixed(1)}km</b><br><span style="font-size:10px;color:#555">${nextDesc}</span><hr style="border:none;border-top:1px solid #ddd;margin:5px 0">⚡ <b>${Math.round(cumC)}g</b> &nbsp; 💧 <b>${Math.round(cumW)}ml</b> &nbsp; 💊 <b>${cumSalt}mg</b><br><span style="font-size:9px;color:#aaa">이 지점에서 ${s.km.toFixed(1)} ~ ${nextKm.toFixed(1)}km 구간 소모량</span></div>`;
     L.marker([closest.lat, closest.lon], {icon: supIcon})
      .on('click', () => { if(closestIdx >= 0){ selectedIndex = closestIdx; chart.update(); } })
      .bindPopup(sPop)
