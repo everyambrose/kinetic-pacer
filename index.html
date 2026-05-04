@@ -730,20 +730,20 @@ function generateStrategy() {
     let badgeLbl, badgeCol, popup;
 
     if (isFirst) {
-      badgeLbl  = '🚩 START';
+      badgeLbl  = '⚡ PRE-LOAD';
       badgeCol  = '#3ddc84';
       popup = '<div style="color:#111;font-size:12px;min-width:180px;line-height:1.8">'
-        + '<b style="font-size:13px">🚩 START ZONE</b><br>'
+        + '<b style="font-size:13px">⚡ PRE-LOAD ZONE</b><br>'
         + `<span style="font-size:10px;color:#666">${b.startKm.toFixed(1)} ~ ${b.endKm.toFixed(1)}km &bull; ${gainStr} &bull; 약${b.estimatedMin}분</span>`
         + '<hr style="border:none;border-top:1px solid #ddd;margin:5px 0">'
         + '<span style="font-size:11px;color:#3ddc84">Pre-loading 커버 구간</span><br>'
         + '<span style="font-size:11px;color:#555">에너지 충전 상태로 시작합니다. 별도 보급 없이 페이스를 유지하세요.</span>'
         + '</div>';
     } else if (isCutoff) {
-      badgeLbl  = '🏁 FINISH';
+      badgeLbl  = '⏱ CUTOFF';
       badgeCol  = '#888';
       popup = '<div style="color:#111;font-size:12px;min-width:180px;line-height:1.8">'
-        + '<b style="font-size:13px">🏁 CUTOFF ZONE</b><br>'
+        + '<b style="font-size:13px">⏱ CUTOFF ZONE</b><br>'
         + `<span style="font-size:10px;color:#666">${b.startKm.toFixed(1)} ~ ${b.endKm.toFixed(1)}km &bull; ${gainStr} &bull; 약${b.estimatedMin}분</span>`
         + '<hr style="border:none;border-top:1px solid #ddd;margin:5px 0">'
         + '<span style="font-size:11px;color:#c00">흡수 커트오프 구간 — 추가 보급 없이 마무리</span><br>'
