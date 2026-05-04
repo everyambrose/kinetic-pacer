@@ -697,21 +697,54 @@ function generateStrategy() {
   /* [MEDIUM-5] 루프 완료 후 Fragment를 한 번에 DOM에 삽입 — 리플로우 1회만 발생 */
   intakePanel.appendChild(_intakeFrag);
 
-  /* v10.2: terrain 컬러 폴리라인 + 중간점 마커 + 클릭 팝업 */
+  /* v10.3: km 배지 + 방향 화살표 + 차트 하이라이트 */
   const mkTBI = (lbl, col) => L.divIcon({
     className: '',
     html: `<div style="background:${col};color:#fff;font-family:var(--fd);font-size:10px;font-weight:700;padding:4px 8px;border-radius:6px;box-shadow:0 2px 8px rgba(0,0,0,0.5);white-space:nowrap;letter-spacing:0.5px">${lbl}</div>`
   });
+
+  /* GPS 베어링 계산 — 두 점 사이 진행 방향(°) */
+  const calcBearing = (p1, p2) => {
+    const r=Math.PI/180, la1=p1.lat*r, la2=p2.lat*r, dl=(p2.lon-p1.lon)*r;
+    return (Math.atan2(Math.sin(dl)*Math.cos(la2),
+      Math.cos(la1)*Math.sin(la2)-Math.sin(la1)*Math.cos(la2)*Math.cos(dl))*180/Math.PI+360)%360;
+  };
+
   _tBlocks.forEach(b => {
     const bPts = gPts.filter(p => p.distKm >= b.startKm && p.distKm <= b.endKm);
     if (bPts.length < 2) return;
     const up=b.type==='UPHILL', dn=b.type==='DOWN';
     const col  = up?'#f97316':dn?'#38bdf8':'#8a95a0';
     const icon = up?'🔺':dn?'🔽':'➡️';
+
+    /* 컬러 폴리라인 */
     L.polyline(bPts.map(p=>[p.lat,p.lon]),{color:col,weight:up?5.5:4.5,opacity:0.88}).addTo(markerGroup);
+
+    /* 방향 화살표 — 블록 길이 기준 1~4개 균등 배치, GPS 베어링으로 회전 */
+    const blockLen = b.endKm - b.startKm;
+    const arrowEvery = Math.max(blockLen / Math.min(Math.floor(blockLen/1.5)+1, 4), 1.2);
+    let nextArrowKm = b.startKm + arrowEvery * 0.6;
+    bPts.forEach((p, i) => {
+      if (i < 1) return;
+      if (p.distKm >= nextArrowKm) {
+        const deg = calcBearing(bPts[i-1], p);
+        L.marker([p.lat, p.lon], {
+          icon: L.divIcon({
+            className: '',
+            html: `<div style="transform:rotate(${deg}deg);color:${col};font-size:14px;filter:drop-shadow(0 0 4px rgba(0,0,0,1));line-height:1">▶</div>`,
+            iconSize: [14, 14], iconAnchor: [7, 7]
+          })
+        }).addTo(markerGroup);
+        nextArrowKm += arrowEvery;
+      }
+    });
+
+    /* 중간점 마커 — startKm 배지, 클릭 시 고도 차트 하이라이트 */
     const mid = bPts[Math.floor(bPts.length/2)];
+    const midIdx = gPts.indexOf(mid);
     const gainStr = up?`+${b.gainM}m`:dn?`-${b.lossM}m`:`±${Math.abs(b.gainM-b.lossM)}m`;
-    L.marker([mid.lat,mid.lon],{icon:mkTBI(`${icon} ${b.type}`,col)})
+    L.marker([mid.lat,mid.lon],{icon:mkTBI(`${icon} ${b.startKm.toFixed(1)}km`,col)})
+     .on('click', () => { if(midIdx >= 0){ selectedIndex = midIdx; chart.update(); } })
      .bindPopup(`<div style="color:#111;font-size:12px;min-width:175px;line-height:1.8"><b style="font-size:13px">${icon} ${b.type}</b><br><span style="font-size:10px;color:#666">${b.startKm.toFixed(1)} ~ ${b.endKm.toFixed(1)}km &nbsp;•&nbsp; ${gainStr} &nbsp;•&nbsp; 약${b.estimatedMin}분</span><hr style="border:none;border-top:1px solid #ddd;margin:5px 0">⚡ <b>${b.carb}g</b> &nbsp; 💧 <b>${b.water}ml</b> &nbsp; 💊 <b>${b.salt}mg</b></div>`)
      .addTo(markerGroup);
   });
