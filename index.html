@@ -784,25 +784,36 @@ function generateStrategy() {
     gPts.forEach(p => { if (Math.abs(p.distKm - s.km) < Math.abs(closest.distKm - s.km)) closest = p; });
     const closestIdx = gPts.indexOf(closest);
 
-    /* 다음 terrain 블록 정보 — "어느 구간 대비" 문구 생성 */
+    /* 다음 terrain 블록 정보 */
     const nb = s.nextBlock;
-    let nextDesc = '피니쉬까지 마무리 구간';
-    let bc = '#8a95a0', em = '⚡';
+    let hdr = '🏁 피니쉬 구간', sub = '', bc = '#8a95a0', em = '⚡';
     if (nb) {
       const nUp = nb.type === 'UPHILL', nDn = nb.type === 'DOWN';
       const nIcon = nUp ? '⬆' : nDn ? '⬇' : '➡';
-      const nGain = nUp ? `+${nb.gainM}m` : nDn ? `-${nb.lossM}m` : `+/-${Math.abs(nb.gainM - nb.lossM)}m`;
-      nextDesc = `${nIcon} ${nb.type} ${nb.startKm.toFixed(1)}~${nb.endKm.toFixed(1)}km 대비 (${nGain} · 약${nb.estimatedMin}분)`;
+      const nGain = nUp ? `+${nb.gainM}m` : nDn ? `-${nb.lossM}m` : `${Math.abs(nb.gainM - nb.lossM)}m`;
+      hdr = `${nIcon} ${nb.type}  ${nb.startKm.toFixed(1)} ~ ${nb.endKm.toFixed(1)}km`;
+      sub = `${nGain} &nbsp;·&nbsp; 약 ${nb.estimatedMin}분`;
       bc = nUp ? '#f97316' : nDn ? '#38bdf8' : '#8a95a0';
       em = nIcon;
     }
+    const gelCount = Math.max(1, Math.round(cumC / 24));
 
     const supIcon = L.divIcon({
       className: '',
       html: `<div style="background:${bc};color:#fff;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;box-shadow:0 2px 8px rgba(0,0,0,0.7);border:2px solid rgba(255,255,255,0.25)">${em}</div>`,
       iconSize: [26, 26], iconAnchor: [13, 13]
     });
-    const sPop = `<div style="color:#111;font-size:12px;min-width:190px;line-height:1.8"><b style="font-size:13px">⚡ SUPPLY · ${s.km.toFixed(1)}km</b><br><span style="font-size:10px;color:#555">${nextDesc}</span><hr style="border:none;border-top:1px solid #ddd;margin:5px 0">⚡ <b>${Math.round(cumC)}g</b> &nbsp; 💧 <b>${Math.round(cumW)}ml</b> &nbsp; 💊 <b>${cumSalt}mg</b><br><span style="font-size:9px;color:#aaa">이 지점에서 ${s.km.toFixed(1)} ~ ${nextKm.toFixed(1)}km 구간 소모량</span></div>`;
+
+    /* 모바일 친화 팝업 — 심플·직관적 */
+    const sPop =
+      `<div style="color:#111;font-size:12px;line-height:1.5;min-width:160px;max-width:210px">` +
+      `<b style="font-size:12px">${hdr}</b>` +
+      (sub ? `<div style="font-size:10px;color:#888;margin-bottom:7px">${sub}</div>` : '') +
+      `<div style="font-size:28px;font-weight:900;color:${bc};line-height:1">${Math.round(cumC)}g</div>` +
+      `<div style="font-size:10px;color:#666;margin-bottom:6px">탄수화물 &nbsp;·&nbsp; 젤 약 ${gelCount}개 분량</div>` +
+      `<div style="font-size:11px;color:#555">💧 ${Math.round(cumW)}ml &nbsp; 💊 ${cumSalt}mg</div>` +
+      `<div style="font-size:9px;color:#aaa;margin-top:6px;padding-top:5px;border-top:1px solid #eee">에너지젤 + CP 보급으로 분산 섭취하세요</div>` +
+      `</div>`;
     L.marker([closest.lat, closest.lon], {icon: supIcon})
      .on('click', () => { if(closestIdx >= 0){ selectedIndex = closestIdx; chart.update(); } })
      .bindPopup(sPop)
