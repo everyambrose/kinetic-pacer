@@ -792,8 +792,8 @@ function generateStrategy() {
       bc = nUp ? '#f97316' : nDn ? '#38bdf8' : '#8a95a0';
       em = nUp ? '⬆' : nDn ? '⬇' : '➡';
     }
-    const gelCount = Math.max(1, Math.round(cumC / 24));
-    const spanKm   = (nextKm - s.km).toFixed(1);
+    const spanKm = (nextKm - s.km).toFixed(1);
+    const estMin  = Math.round(secHr * 60);
 
     const supIcon = L.divIcon({
       className: '',
@@ -801,15 +801,15 @@ function generateStrategy() {
       iconSize: [26, 26], iconAnchor: [13, 13]
     });
 
-    /* 모바일 친화 팝업 — 구간 거리 기준, 심플 */
+    /* 모바일 친화 팝업 v10.10 — 젤 갯수 제거, CHO + 힌트만 */
     const sPop =
       `<div style="color:#111;font-size:12px;line-height:1.5;min-width:160px;max-width:210px">` +
       `<b style="font-size:13px">${s.km.toFixed(1)}km → ${nextKm.toFixed(1)}km</b>` +
-      `<div style="font-size:10px;color:#888;margin-bottom:7px">${spanKm}km 구간 · 분산 섭취</div>` +
+      `<div style="font-size:10px;color:#888;margin-bottom:7px">${spanKm}km &nbsp;·&nbsp; 약 ${estMin}분</div>` +
       `<div style="font-size:28px;font-weight:900;color:${bc};line-height:1">${Math.round(cumC)}g</div>` +
-      `<div style="font-size:10px;color:#666;margin-bottom:6px">탄수화물 &nbsp;·&nbsp; 젤 약 ${gelCount}개 분량</div>` +
+      `<div style="font-size:10px;color:#666;margin-bottom:6px">이 구간 탄수화물 필요량</div>` +
       `<div style="font-size:11px;color:#555">💧 ${Math.round(cumW)}ml &nbsp; 💊 ${cumSalt}mg</div>` +
-      `<div style="font-size:9px;color:#aaa;margin-top:6px;padding-top:5px;border-top:1px solid #eee">에너지젤 + CP 보급으로 천천히 채우세요</div>` +
+      `<div style="font-size:9px;color:#aaa;margin-top:6px;padding-top:5px;border-top:1px solid #eee">에너지젤(1개≈24g) + CP 보급으로 채우세요</div>` +
       `</div>`;
     L.marker([closest.lat, closest.lon], {icon: supIcon})
      .on('click', () => { if(closestIdx >= 0){ selectedIndex = closestIdx; chart.update(); } })
