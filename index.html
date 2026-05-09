@@ -787,13 +787,14 @@ function generateStrategy() {
     if (isCutoff) L.marker([mid.lat, mid.lon], {icon: mkSmallBadge('⏱ CUTOFF', '#666')}).addTo(markerGroup);
   });
 
-  /* v10.7: 보급 트리거 — 지형 타입 무관, 7km 이상 경과 시 terrain 경계에서 트리거
-     (업힐만이 아니라 평지/다운힐도 에너지 소모가 지속됨) */
+  /* v10.13: 첫 보급 트리거 = PRE-LOAD 블록 끝 이후 (Jeukendrup 2014: 내인성 글리코겐 소진 시점)
+     기존 `b.endKm <= 3` 고정값 → _tBlocks[0].endKm 동적 적용 */
   const MIN_SUPPLY_GAP = 7.0;
+  const _preLoadEndKm = _tBlocks[0] ? _tBlocks[0].endKm : 3;
   const _supplyKms = [];
   let _lastTrigKm = 0;
   _tBlocks.forEach((b, idx) => {
-    if (b.endKm <= 3 || b.endKm > _cutKm) return;
+    if (b.endKm <= _preLoadEndKm || b.endKm > _cutKm) return;
     if (b.endKm - _lastTrigKm >= MIN_SUPPLY_GAP) {
       const nb = _tBlocks[idx + 1];
       _supplyKms.push({ km: b.endKm, nextBlock: nb });
@@ -818,27 +819,28 @@ function generateStrategy() {
     gPts.forEach(p => { if (Math.abs(p.distKm - s.km) < Math.abs(closest.distKm - s.km)) closest = p; });
     const closestIdx = gPts.indexOf(closest);
 
-    /* 다음 terrain 블록 정보 (아이콘·색상용) */
+    /* 다음 terrain 블록 색상 (마커 컬러용) */
     const nb = s.nextBlock;
-    let bc = '#f97316', em = '⚡';
+    let bc = '#f97316';
     if (nb) {
       const nUp = nb.type === 'UPHILL', nDn = nb.type === 'DOWN';
       bc = nUp ? '#f97316' : nDn ? '#38bdf8' : '#8a95a0';
-      em = nUp ? '⬆' : nDn ? '⬇' : '➡';
     }
     const spanKm = (nextKm - s.km).toFixed(1);
     const estMin  = Math.round(secHr * 60);
+    const supplyNum = i + 1;  /* 보급 순서 번호 */
 
+    /* v10.13: 마커 아이콘 — 지형 화살표 대신 보급 순서 번호 */
     const supIcon = L.divIcon({
       className: '',
-      html: `<div style="background:${bc};color:#fff;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;box-shadow:0 2px 8px rgba(0,0,0,0.7);border:2px solid rgba(255,255,255,0.25)">${em}</div>`,
-      iconSize: [26, 26], iconAnchor: [13, 13]
+      html: `<div style="background:${bc};color:#fff;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;box-shadow:0 2px 8px rgba(0,0,0,0.7);border:2px solid rgba(255,255,255,0.3)">${supplyNum}</div>`,
+      iconSize: [28, 28], iconAnchor: [14, 14]
     });
 
-    /* v10.11: 팝업 극소화 — 원칙은 배너에서, 팝업은 숫자만 3줄 */
+    /* v10.13: 팝업 — 보급 순서 + 숫자 3줄 */
     const sPop =
       `<div style="color:#111;font-size:12px;line-height:1.6;min-width:140px;text-align:center;padding:2px 4px">` +
-      `<div style="font-size:11px;color:#666;margin-bottom:4px">${s.km.toFixed(1)} → ${nextKm.toFixed(1)}km &nbsp;(${spanKm}km)</div>` +
+      `<div style="font-size:11px;color:#666;margin-bottom:4px">${supplyNum}번째 보급 &nbsp;·&nbsp; ${s.km.toFixed(1)} → ${nextKm.toFixed(1)}km</div>` +
       `<div style="font-size:30px;font-weight:900;color:${bc};line-height:1.1">${Math.round(cumC)}g</div>` +
       `<div style="font-size:10px;color:#888;margin-bottom:5px">탄수화물</div>` +
       `<div style="font-size:12px;color:#444">💧 ${Math.round(cumW)}ml &nbsp; 💊 ${cumSalt}mg</div>` +
@@ -863,11 +865,10 @@ function generateStrategy() {
     const _totC = preCarb.innerText;
     const _totW = preWater.innerText;
     _fuelBanner.style.display = 'flex';
+    const _totS = preSalt.innerText;
     _fuelBanner.innerHTML =
-      `<span class="fb-rule"><span class="fb-label">탄수화물</span><span class="fb-val">~${_gG}km</span><span style="font-size:10px;color:var(--muted)">마다</span></span>` +
-      `<span class="fb-rule"><span class="fb-label">수분</span><span class="fb-val">~${_wG}km</span><span style="font-size:10px;color:var(--muted)">마다</span></span>` +
-      `<span class="fb-rule"><span class="fb-label">전해질</span><span class="fb-val">~${_sG}km</span><span style="font-size:10px;color:var(--muted)">마다</span></span>` +
-      `<span class="fb-hint">총 ${_totC} / ${_totW} &nbsp;·&nbsp; 에너지젤(1개≈24g)+CP 보급 조합</span>`;
+      `<span class="fb-hint">에너지젤(1개≈24g)과 CP 보급을 조합해 구간 내 분산 섭취하세요</span>` +
+      `<span style="font-size:11px;color:var(--muted);width:100%;margin-top:2px">총 필요량 &nbsp;⚡ ${_totC} &nbsp;·&nbsp; 💧 ${_totW} &nbsp;·&nbsp; 💊 ${_totS}</span>`;
   }
 
   /* 커트오프 정보 — _cutKm은 위에서 이미 정의됨 */
