@@ -139,6 +139,27 @@ input[type=range] { accent-color:var(--green); cursor:pointer; }
 .nutrition-icon div { transform: scale(var(--icon-scale)); transform-origin: center; cursor:pointer; }
 .icon-badge { font-size:8px; color:#fff; padding:1px 3px; border-radius:2px; font-weight:700; display:block; margin-top:-5px; box-shadow:0 2px 4px #000; }
 
+/* fuel-banner — 섭취 원칙 공지 */
+#fuel-banner {
+  background: rgba(12,16,23,0.92);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 14px;
+  margin-bottom: 6px;
+  font-family: var(--fd);
+  font-size: 12px;
+  color: var(--text);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 16px;
+  letter-spacing: 0.3px;
+}
+#fuel-banner .fb-label { color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: 1px; }
+#fuel-banner .fb-rule  { display: flex; align-items: center; gap: 6px; }
+#fuel-banner .fb-val   { color: var(--green); font-weight: 700; font-size: 13px; }
+#fuel-banner .fb-hint  { color: var(--muted); font-size: 10px; margin-left: auto; }
+@media (max-width: 768px) { #fuel-banner { font-size: 11px; padding: 7px 12px; gap: 5px 12px; } }
 /* AUTO INTERVAL 읽기 전용 스타일 — 편집 불가, 스피너 제거 */
 #gel_gap, #water_gap, #salt_gap {
   pointer-events: none;
@@ -251,6 +272,8 @@ input[type=range] { accent-color:var(--green); cursor:pointer; }
   <div id="kp-gi-warn" style="display:none; background:rgba(168,85,247,0.10); border:1px solid var(--purple); border-radius:6px; padding:8px 14px; margin-bottom:6px; font-size:11px; color:var(--purple); font-family:var(--fd); font-weight:700; letter-spacing:0.5px;">
     🔬 장레이스 GI 주의 — 시간당 탄수화물 섭취량이 높습니다. 레이스 전 2~4주 Gut-Training을 권장합니다. (Costa 2017)
   </div>
+  <!-- v10.11: 섭취 원칙 배너 — 지도 위 항상 표시, generateStrategy()에서 업데이트 -->
+  <div id="fuel-banner" style="display:none"></div>
   <div class="content-row">
     <div id="map" data-zoom="13"></div>
     <div class="intake-panel">
@@ -801,15 +824,13 @@ function generateStrategy() {
       iconSize: [26, 26], iconAnchor: [13, 13]
     });
 
-    /* 모바일 친화 팝업 v10.10 — 젤 갯수 제거, CHO + 힌트만 */
+    /* v10.11: 팝업 극소화 — 원칙은 배너에서, 팝업은 숫자만 3줄 */
     const sPop =
-      `<div style="color:#111;font-size:12px;line-height:1.5;min-width:160px;max-width:210px">` +
-      `<b style="font-size:13px">${s.km.toFixed(1)}km → ${nextKm.toFixed(1)}km</b>` +
-      `<div style="font-size:10px;color:#888;margin-bottom:7px">${spanKm}km &nbsp;·&nbsp; 약 ${estMin}분</div>` +
-      `<div style="font-size:28px;font-weight:900;color:${bc};line-height:1">${Math.round(cumC)}g</div>` +
-      `<div style="font-size:10px;color:#666;margin-bottom:6px">이 구간 탄수화물 필요량</div>` +
-      `<div style="font-size:11px;color:#555">💧 ${Math.round(cumW)}ml &nbsp; 💊 ${cumSalt}mg</div>` +
-      `<div style="font-size:9px;color:#aaa;margin-top:6px;padding-top:5px;border-top:1px solid #eee">에너지젤(1개≈24g) + CP 보급으로 채우세요</div>` +
+      `<div style="color:#111;font-size:12px;line-height:1.6;min-width:140px;text-align:center;padding:2px 4px">` +
+      `<div style="font-size:11px;color:#666;margin-bottom:4px">${s.km.toFixed(1)} → ${nextKm.toFixed(1)}km &nbsp;(${spanKm}km)</div>` +
+      `<div style="font-size:30px;font-weight:900;color:${bc};line-height:1.1">${Math.round(cumC)}g</div>` +
+      `<div style="font-size:10px;color:#888;margin-bottom:5px">탄수화물</div>` +
+      `<div style="font-size:12px;color:#444">💧 ${Math.round(cumW)}ml &nbsp; 💊 ${cumSalt}mg</div>` +
       `</div>`;
     L.marker([closest.lat, closest.lon], {icon: supIcon})
      .on('click', () => { if(closestIdx >= 0){ selectedIndex = closestIdx; chart.update(); } })
@@ -821,6 +842,22 @@ function generateStrategy() {
 
   renderTerrainTab(_tBlocks);
   switchTab('terrain');
+
+  /* v10.11: 섭취 원칙 배너 업데이트 */
+  const _fuelBanner = document.getElementById('fuel-banner');
+  if (_fuelBanner) {
+    const _gG = (+gel_gap.value).toFixed(1);
+    const _wG = (+water_gap.value).toFixed(1);
+    const _sG = (+salt_gap.value).toFixed(1);
+    const _totC = preCarb.innerText;
+    const _totW = preWater.innerText;
+    _fuelBanner.style.display = 'flex';
+    _fuelBanner.innerHTML =
+      `<span class="fb-rule"><span class="fb-label">탄수화물</span><span class="fb-val">~${_gG}km</span><span style="font-size:10px;color:var(--muted)">마다</span></span>` +
+      `<span class="fb-rule"><span class="fb-label">수분</span><span class="fb-val">~${_wG}km</span><span style="font-size:10px;color:var(--muted)">마다</span></span>` +
+      `<span class="fb-rule"><span class="fb-label">전해질</span><span class="fb-val">~${_sG}km</span><span style="font-size:10px;color:var(--muted)">마다</span></span>` +
+      `<span class="fb-hint">총 ${_totC} / ${_totW} &nbsp;·&nbsp; 에너지젤(1개≈24g)+CP 보급 조합</span>`;
+  }
 
   /* 커트오프 정보 — _cutKm은 위에서 이미 정의됨 */
   const _lastB = [..._tBlocks].reverse().find(b => b.startKm < _cutKm) || _tBlocks[_tBlocks.length-1];
