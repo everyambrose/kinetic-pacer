@@ -787,18 +787,18 @@ function generateStrategy() {
     if (isCutoff) L.marker([mid.lat, mid.lon], {icon: mkSmallBadge('⏱ CUTOFF', '#666')}).addTo(markerGroup);
   });
 
-  /* v10.13: 첫 보급 트리거 = PRE-LOAD 블록 끝 이후 (Jeukendrup 2014: 내인성 글리코겐 소진 시점)
-     기존 `b.endKm <= 3` 고정값 → _tBlocks[0].endKm 동적 적용 */
+  /* v10.15: 보급 마커 = 블록 진입 시점 (b.startKm)
+     기존: b.endKm (블록 끝 = 이미 지나온 구간의 끝에서 보급 안내 → 혼동)
+     수정: b.startKm (블록 시작 = 구간 진입 시 보급 안내 → 사이드바와 일치) */
   const MIN_SUPPLY_GAP = 7.0;
   const _preLoadEndKm = _tBlocks[0] ? _tBlocks[0].endKm : 3;
   const _supplyKms = [];
   let _lastTrigKm = 0;
   _tBlocks.forEach((b, idx) => {
-    if (b.endKm <= _preLoadEndKm || b.endKm > _cutKm) return;
-    if (b.endKm - _lastTrigKm >= MIN_SUPPLY_GAP) {
-      const nb = _tBlocks[idx + 1];
-      _supplyKms.push({ km: b.endKm, nextBlock: nb });
-      _lastTrigKm = b.endKm;
+    if (b.startKm < _preLoadEndKm || b.startKm >= _cutKm) return;
+    if (b.startKm - _lastTrigKm >= MIN_SUPPLY_GAP) {
+      _supplyKms.push({ km: b.startKm, nextBlock: b });
+      _lastTrigKm = b.startKm;
     }
   });
 
