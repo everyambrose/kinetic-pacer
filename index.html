@@ -772,11 +772,11 @@ function generateStrategy() {
       popupHtml = `<div style="color:#111;font-size:12px;min-width:175px;line-height:1.8"><b style="font-size:13px">${icon} ${b.type}</b><br><span style="font-size:10px;color:#666">${b.startKm.toFixed(1)} ~ ${b.endKm.toFixed(1)}km &nbsp;&bull;&nbsp; ${gainStr} &nbsp;&bull;&nbsp; 약${b.estimatedMin}분</span><hr style="border:none;border-top:1px solid #ddd;margin:5px 0">⚡ <b>${b.carb}g</b> &nbsp; 💧 <b>${b.water}ml</b> &nbsp; 💊 <b>${b.salt}mg</b></div>`;
     }
 
-    /* v10.17: 단일 색 루트 — 지형별 색 제거, 단일 슬레이트로 통일 */
+    /* v10.19: 루트 색상 — #60a5fa 블루 (다크맵 위 시인성 최적) */
     L.polyline(bPts.map(p => [p.lat, p.lon]), {
-      color: '#4a5568',
-      weight: isFirst ? 4 : 4.5,
-      opacity: isCutoff ? 0.28 : isFirst ? 0.45 : 0.75,
+      color: isFirst ? '#38bdf8' : isCutoff ? '#475569' : '#60a5fa',
+      weight: isFirst ? 3.5 : 4.5,
+      opacity: isCutoff ? 0.35 : isFirst ? 0.50 : 0.85,
       dashArray: isCutoff ? '6 5' : null
     }).on('click', (e) => {
       if (midIdx >= 0) { selectedIndex = midIdx; chart.update(); }
@@ -822,9 +822,9 @@ function generateStrategy() {
       `<div style="font-size:9px;color:#aaa;margin-top:6px;border-top:1px solid #eee;padding-top:5px">이 구간 내 분산 섭취</div>` +
       `</div>`;
 
-    /* 앰버 오버레이 폴리라인 */
+    /* v10.19: 보급 오버레이 — #fbbf24 골드 (블루 루트와 최대 대비) */
     L.polyline(zPts.map(p => [p.lat, p.lon]), {
-      color: '#f59e0b', weight: 7, opacity: 0.82
+      color: '#fbbf24', weight: 8, opacity: 0.92
     }).on('click', (e) => {
       if (zMidIdx >= 0) { selectedIndex = zMidIdx; chart.update(); }
       L.popup().setLatLng(e.latlng).setContent(zPop).openOn(lMap);
@@ -836,7 +836,7 @@ function generateStrategy() {
       L.marker([zStart.lat, zStart.lon], {
         icon: L.divIcon({
           className: '',
-          html: `<div style="background:#f59e0b;color:#1a1a1a;padding:2px 8px;border-radius:8px;font-size:10px;font-weight:800;box-shadow:0 1px 5px rgba(0,0,0,0.6);white-space:nowrap;border:1px solid rgba(255,255,255,0.3)">⚡ ${b.startKm.toFixed(1)}km</div>`,
+          html: `<div style="background:#fbbf24;color:#1a1a1a;padding:2px 8px;border-radius:8px;font-size:10px;font-weight:800;box-shadow:0 2px 6px rgba(0,0,0,0.7);white-space:nowrap;border:1px solid rgba(255,255,255,0.4)">⚡ ${b.startKm.toFixed(1)}km</div>`,
           iconSize: [null, 20], iconAnchor: [0, 10]
         })
       }).bindPopup(zPop).addTo(markerGroup);
