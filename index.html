@@ -811,6 +811,20 @@ function generateStrategy() {
   const LOW_THRESH   = Math.max(15, SUPPLY_AMT * 0.25);
   const ZONE_LEAD_KM = Math.max(1.0, MIN_ZONE_GAP * 0.20);
 
+  /* v10.25: 구간별 페이스 정규화
+     업힐 = gf배 느림, 다운힐 = 0.85배 빠름, 평지 = 1.0
+     정규화: 총 가중 거리 → tHr에 맞게 스케일 */
+  let _totalWT = 0;
+  gPts.forEach((p, pi) => {
+    if (pi === 0) return;
+    const pr = gPts[pi-1], d = p.distKm - pr.distKm;
+    if (d <= 0) return;
+    const g = (p.ele - pr.ele) / (d * 1000);
+    const pF = g > 0.08 ? Math.min(getGapF(g), 2.5) : g < -0.08 ? 0.85 : 1.0;
+    _totalWT += d * pF;
+  });
+  const _tNorm = tHr / Math.max(_totalWT, 0.001);  /* hr/km 정규화 계수 */
+
   let carbBudget    = startBudget;
   let inZone        = false;
   let zoneStartKm   = 0;
@@ -821,8 +835,11 @@ function generateStrategy() {
     if (pi === 0) return;
     const pr = gPts[pi - 1], d = p.distKm - pr.distKm;
     if (d <= 0 || pr.distKm < _preLoadEndKm || p.distKm > _cutKm) return;
-    const gf = getGapF((p.ele - pr.ele) / (d * 1000));
-    carbBudget -= Math.min(65 * gf * weightFactor, 85) * (tSec / (totalK * 3600)) * d;
+    const segGrade = (p.ele - pr.ele) / (d * 1000);
+    const gf  = getGapF(segGrade);
+    const pF  = segGrade > 0.08 ? Math.min(gf, 2.5) : segGrade < -0.08 ? 0.85 : 1.0;
+    const segTimeHr = d * pF * _tNorm;  /* 지형 보정 실제 소요 시간 */
+    carbBudget -= Math.min(65 * gf * weightFactor, 85) * segTimeHr;
 
     if (!inZone && carbBudget <= LOW_THRESH
         && p.distKm >= lastZoneEndKm + MIN_ZONE_GAP) {
@@ -837,21 +854,25 @@ function generateStrategy() {
     }
   });
 
-  /* === 렌더링: 단순 골드 선 + 소형 배지 === */
+  /* === 렌더링 === */
   supplyZones.forEach(z => {
     const zPts = gPts.filter(p => p.distKm >= z.startKm && p.distKm <= z.endKm);
     if (zPts.length < 2) return;
     const zMid = zPts[Math.floor(zPts.length / 2)];
     const zMidIdx = gPts.indexOf(zMid);
 
+    /* 구간별 페이스 보정 적용 CHO 계산 */
     let zCarb = 0, zWater = 0;
     gPts.forEach((p, pi) => {
       if (pi === 0) return;
       const pr = gPts[pi - 1], d = p.distKm - pr.distKm;
       if (d <= 0 || pr.distKm < z.startKm || p.distKm > z.endKm) return;
-      const gf = getGapF((p.ele - pr.ele) / (d * 1000));
-      zCarb  += Math.min(65 * gf * weightFactor, 85) * (tSec / (totalK * 3600)) * d;
-      zWater += waterRate * (tSec / (totalK * 3600)) * d;
+      const sg = (p.ele - pr.ele) / (d * 1000);
+      const gf = getGapF(sg);
+      const pF = sg > 0.08 ? Math.min(gf, 2.5) : sg < -0.08 ? 0.85 : 1.0;
+      const segHr = d * pF * _tNorm;
+      zCarb  += Math.min(65 * gf * weightFactor, 85) * segHr;
+      zWater += waterRate * segHr;
     });
     const zSecHr = (z.endKm - z.startKm) * paceMinPerKm / 60;
     const zSalt  = Math.round(Math.max(50, Math.min(800, (waterRate * zSecHr / 1000) * sweatNaConc * 0.75)));
@@ -866,25 +887,21 @@ function generateStrategy() {
       `<div style="font-size:12px;color:#444">💧 ${Math.round(zWater)}ml &nbsp; 💊 ${zSalt}mg</div>` +
       `</div>`;
 
-    /* v10.24: 폴리라인 제거 → 원형 아이콘 + km 배지만 표시 */
+    /* v10.25: 보급 구간 폴리라인 복원 */
+    L.polyline(zPts.map(p => [p.lat, p.lon]), {
+      color: '#fbbf24', weight: 5, opacity: 0.88
+    }).on('click', (e) => {
+      if (zMidIdx >= 0) { selectedIndex = zMidIdx; chart.update(); }
+      L.popup().setLatLng(e.latlng).setContent(zPop).openOn(lMap);
+    }).addTo(markerGroup);
+
+    /* v10.25: ⚡ Xkm 텍스트 마커만 (도형 없음) */
     if (zPts[0]) {
       L.marker([zPts[0].lat, zPts[0].lon], {
         icon: L.divIcon({
           className: '',
-          html: `<div style="
-            width:34px;height:34px;
-            background:#fbbf24;
-            border-radius:50%;
-            display:flex;flex-direction:column;
-            align-items:center;justify-content:center;
-            box-shadow:0 2px 8px rgba(0,0,0,0.55);
-            border:2px solid rgba(255,255,255,0.35);
-            transform:translate(-17px,-34px)
-          ">
-            <span style="font-size:13px;line-height:1">⚡</span>
-            <span style="font-size:7px;font-weight:900;line-height:1.2;color:#1a1a1a">${z.startKm.toFixed(0)}km</span>
-          </div>`,
-          iconSize: [34, 34], iconAnchor: [17, 34]
+          html: `<div style="color:#fbbf24;font-size:12px;font-weight:900;white-space:nowrap;text-shadow:0 1px 4px rgba(0,0,0,0.95),0 0 8px rgba(0,0,0,0.8);line-height:1;transform:translate(4px,-100%)">⚡ ${z.startKm.toFixed(0)}km</div>`,
+          iconSize: [null, 14], iconAnchor: [0, 14]
         })
       }).bindPopup(zPop).addTo(markerGroup);
     }
