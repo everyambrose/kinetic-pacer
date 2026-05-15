@@ -795,16 +795,17 @@ function generateStrategy() {
   const _preLoadEndKm   = _tBlocks[0] ? _tBlocks[0].endKm : 3;
   const demandRateZ     = 65 * avgGapFactor * weightFactor;
   const absorptionRateZ = Math.min(demandRateZ, 85);
-  const preloadBudget   = Math.max(
-    absorptionRateZ * 1.0,
-    Math.round((demandRateZ - absorptionRateZ) * tHr)
-  );
-  const SUPPLY_AMT   = absorptionRateZ * 1.5;
+  /* v10.23: 시작 예산 = absorptionRate × 1hr
+     프리로딩 630g은 레이스 deficit 보전용 — 시작 예산으로 쓰지 않음.
+     선수는 프리로딩 구간 직후부터 즉시 보급 시작해야 함.
+     absorptionRate × 1hr = 약 1시간치 여유 (첫 보급까지 허용 버퍼) */
+  const startBudget  = absorptionRateZ * 1.0;   /* ~1hr 여유 버퍼 */
+  const SUPPLY_AMT   = absorptionRateZ * 1.5;   /* 1회 보급 = 1.5hr 흡수량 */
   const MIN_ZONE_GAP = Math.max(6.0, totalK * 0.07);
-  const LOW_THRESH   = Math.max(20, SUPPLY_AMT * 0.30);
-  const ZONE_LEAD_KM = Math.max(1.0, MIN_ZONE_GAP * 0.25);
+  const LOW_THRESH   = Math.max(15, SUPPLY_AMT * 0.25);
+  const ZONE_LEAD_KM = Math.max(1.0, MIN_ZONE_GAP * 0.20);
 
-  let carbBudget    = preloadBudget;
+  let carbBudget    = startBudget;
   let inZone        = false;
   let zoneStartKm   = 0;
   let lastZoneEndKm = _preLoadEndKm - MIN_ZONE_GAP;
