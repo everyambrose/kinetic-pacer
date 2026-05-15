@@ -788,16 +788,20 @@ function generateStrategy() {
     if (isCutoff) L.marker([mid.lat, mid.lon], {icon: mkSmallBadge('⏱ CUTOFF', '#666')}).addTo(markerGroup);
   });
 
-  /* v10.17: 보급권장 구간 오버레이 — 점 마커 제거, 블록 전체를 앰버 하이라이트로
-     표시 (사이드바 블록과 1:1 대응) */
+  /* v10.18: 보급권장 구간 오버레이
+     - UPHILL 블록 제외: 업힐은 소모 구간, 보급은 평지/다운힐에서 → 겹침 해소
+     - isLong 동적: totalK × 8% 이상 (100km=8km, 50km=6km)
+     - 구간 시작점에 ⚡ Xkm 앰버 배지 추가 */
   const _preLoadEndKm = _tBlocks[0] ? _tBlocks[0].endKm : 3;
+  const _longThresh   = Math.max(6, totalK * 0.08);
   _tBlocks.forEach((b, idx) => {
     if (b.startKm < _preLoadEndKm || b.endKm > _cutKm) return;
+    if (b.type === 'UPHILL') return;  /* 업힐 블록은 보급 하이라이트 제외 */
 
     const nextB = _tBlocks[idx + 1];
     const isPreUphill = nextB && nextB.type === 'UPHILL' && nextB.startKm < _cutKm;
-    const isLong      = (b.endKm - b.startKm) >= 6;  /* 6km 이상 장거리 구간 */
-    if (!isPreUphill && !isLong) return;  /* 주요 보급권장 블록만 하이라이트 */
+    const isLong      = (b.endKm - b.startKm) >= _longThresh;
+    if (!isPreUphill && !isLong) return;
 
     const zPts = gPts.filter(p => p.distKm >= b.startKm && p.distKm <= b.endKm);
     if (zPts.length < 2) return;
@@ -805,8 +809,8 @@ function generateStrategy() {
     const zMid    = zPts[Math.floor(zPts.length / 2)];
     const zMidIdx = gPts.indexOf(zMid);
 
-    /* 보급 구간 팝업 — 사이드바와 1:1 대응 (b.carb, b.water, b.salt) */
-    const icon2 = b.type === 'UPHILL' ? '🔺' : b.type === 'DOWN' ? '🔽' : '➡️';
+    /* 보급 구간 팝업 — 사이드바와 1:1 대응 */
+    const icon2 = b.type === 'DOWN' ? '🔽' : '➡️';
     const zPop  =
       `<div style="color:#111;font-size:12px;line-height:1.7;min-width:160px">` +
       `<b style="font-size:13px">⚡ 보급 구간</b>` +
@@ -818,13 +822,25 @@ function generateStrategy() {
       `<div style="font-size:9px;color:#aaa;margin-top:6px;border-top:1px solid #eee;padding-top:5px">이 구간 내 분산 섭취</div>` +
       `</div>`;
 
-    /* 선명한 앰버 오버레이 폴리라인 (7px, 0.82 불투명도) */
+    /* 앰버 오버레이 폴리라인 */
     L.polyline(zPts.map(p => [p.lat, p.lon]), {
       color: '#f59e0b', weight: 7, opacity: 0.82
     }).on('click', (e) => {
       if (zMidIdx >= 0) { selectedIndex = zMidIdx; chart.update(); }
       L.popup().setLatLng(e.latlng).setContent(zPop).openOn(lMap);
     }).addTo(markerGroup);
+
+    /* v10.18: 구간 시작점 ⚡ Xkm 배지 마커 */
+    const zStart = zPts[0];
+    if (zStart) {
+      L.marker([zStart.lat, zStart.lon], {
+        icon: L.divIcon({
+          className: '',
+          html: `<div style="background:#f59e0b;color:#1a1a1a;padding:2px 8px;border-radius:8px;font-size:10px;font-weight:800;box-shadow:0 1px 5px rgba(0,0,0,0.6);white-space:nowrap;border:1px solid rgba(255,255,255,0.3)">⚡ ${b.startKm.toFixed(1)}km</div>`,
+          iconSize: [null, 20], iconAnchor: [0, 10]
+        })
+      }).bindPopup(zPop).addTo(markerGroup);
+    }
   });
 
 
