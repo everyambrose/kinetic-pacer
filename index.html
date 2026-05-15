@@ -772,78 +772,60 @@ function generateStrategy() {
       popupHtml = `<div style="color:#111;font-size:12px;min-width:175px;line-height:1.8"><b style="font-size:13px">${icon} ${b.type}</b><br><span style="font-size:10px;color:#666">${b.startKm.toFixed(1)} ~ ${b.endKm.toFixed(1)}km &nbsp;&bull;&nbsp; ${gainStr} &nbsp;&bull;&nbsp; 약${b.estimatedMin}분</span><hr style="border:none;border-top:1px solid #ddd;margin:5px 0">⚡ <b>${b.carb}g</b> &nbsp; 💧 <b>${b.water}ml</b> &nbsp; 💊 <b>${b.salt}mg</b></div>`;
     }
 
-    /* 클릭 가능한 폴리라인 — terrain 배지 마커 없음 */
+    /* v10.17: 단일 색 루트 — 지형별 색 제거, 단일 슬레이트로 통일 */
     L.polyline(bPts.map(p => [p.lat, p.lon]), {
-      color: col, weight: up ? 5.5 : 4.5,
-      opacity: isCutoff ? 0.32 : isFirst ? 0.52 : 0.88,
-      dashArray: isCutoff ? '7 5' : null
+      color: '#4a5568',
+      weight: isFirst ? 4 : 4.5,
+      opacity: isCutoff ? 0.28 : isFirst ? 0.45 : 0.75,
+      dashArray: isCutoff ? '6 5' : null
     }).on('click', (e) => {
       if (midIdx >= 0) { selectedIndex = midIdx; chart.update(); }
       L.popup().setLatLng(e.latlng).setContent(popupHtml).openOn(lMap);
     }).addTo(markerGroup);
 
-    /* PRE-LOAD / CUTOFF 전용 소형 배지만 표시 */
+    /* PRE-LOAD / CUTOFF 전용 소형 배지 */
     if (isFirst)  L.marker([mid.lat, mid.lon], {icon: mkSmallBadge('⚡ PRE-LOAD', '#3ddc84')}).addTo(markerGroup);
     if (isCutoff) L.marker([mid.lat, mid.lon], {icon: mkSmallBadge('⏱ CUTOFF', '#666')}).addTo(markerGroup);
   });
 
-  /* v10.16: 보급 마커 정렬 개선
-     - MIN_SUPPLY_GAP 7→5km: 사이드바 블록 단위와 더 근접
-     - _lastTrigKm = _preLoadEndKm - MIN_SUPPLY_GAP: 프리로딩 직후 첫 블록에서 즉시 트리거 */
-  const MIN_SUPPLY_GAP = 5.0;
+  /* v10.17: 보급권장 구간 오버레이 — 점 마커 제거, 블록 전체를 앰버 하이라이트로
+     표시 (사이드바 블록과 1:1 대응) */
   const _preLoadEndKm = _tBlocks[0] ? _tBlocks[0].endKm : 3;
-  const _supplyKms = [];
-  let _lastTrigKm = _preLoadEndKm - MIN_SUPPLY_GAP;
   _tBlocks.forEach((b, idx) => {
-    if (b.startKm < _preLoadEndKm || b.startKm >= _cutKm) return;
-    if (b.startKm - _lastTrigKm >= MIN_SUPPLY_GAP) {
-      _supplyKms.push({ km: b.startKm, nextBlock: b });
-      _lastTrigKm = b.startKm;
-    }
-  });
+    if (b.startKm < _preLoadEndKm || b.endKm > _cutKm) return;
 
-  _supplyKms.forEach((s, i) => {
-    const nextKm = i < _supplyKms.length - 1 ? _supplyKms[i + 1].km : Math.min(_cutKm, totalK);
-    let cumC = 0, cumW = 0;
-    gPts.forEach((p, pi) => {
-      if (pi === 0) return;
-      const pr = gPts[pi - 1], d = p.distKm - pr.distKm;
-      if (d <= 0 || pr.distKm < s.km || p.distKm > nextKm) return;
-      const gf = getGapF((p.ele - pr.ele) / (d * 1000));
-      cumC += Math.min(65 * gf * weightFactor, 85) * (tSec / (totalK * 3600)) * d;
-      cumW += waterRate * (tSec / (totalK * 3600)) * d;
-    });
-    const secHr = (nextKm - s.km) * paceMinPerKm / 60;
-    const cumSalt = Math.round(Math.max(50, Math.min(800, (waterRate * secHr / 1000) * sweatNaConc * 0.75)));
-    let closest = gPts[1];
-    gPts.forEach(p => { if (Math.abs(p.distKm - s.km) < Math.abs(closest.distKm - s.km)) closest = p; });
-    const closestIdx = gPts.indexOf(closest);
+    const nextB = _tBlocks[idx + 1];
+    const isPreUphill = nextB && nextB.type === 'UPHILL' && nextB.startKm < _cutKm;
+    const isLong      = (b.endKm - b.startKm) >= 6;  /* 6km 이상 장거리 구간 */
+    if (!isPreUphill && !isLong) return;  /* 주요 보급권장 블록만 하이라이트 */
 
-    /* v10.16: 단일 색상 (앰버) — 지형 색과 독립, 수분(파랑) 혼동 방지 */
-    const bc = '#f59e0b';
-    const spanKm = (nextKm - s.km).toFixed(1);
-    const estMin  = Math.round(secHr * 60);
+    const zPts = gPts.filter(p => p.distKm >= b.startKm && p.distKm <= b.endKm);
+    if (zPts.length < 2) return;
 
-    const supIcon = L.divIcon({
-      className: '',
-      html: `<div style="background:#f59e0b;color:#1a1a1a;padding:3px 9px;border-radius:12px;font-size:11px;font-weight:800;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,0.7);border:1px solid rgba(255,255,255,0.3);line-height:1.4">⚡ ${s.km.toFixed(1)}km</div>`,
-      iconSize: [null, 22], iconAnchor: [0, 11]
-    });
+    const zMid    = zPts[Math.floor(zPts.length / 2)];
+    const zMidIdx = gPts.indexOf(zMid);
 
-    /* 팝업 — 앰버 강조 + 구간 km + 수치 3줄 */
-    const sPop =
-      `<div style="color:#111;font-size:12px;line-height:1.6;min-width:140px;text-align:center;padding:2px 4px">` +
-      `<div style="font-size:11px;color:#666;margin-bottom:4px">${s.km.toFixed(1)} → ${nextKm.toFixed(1)}km &nbsp;·&nbsp; ${spanKm}km</div>` +
-      `<div style="font-size:30px;font-weight:900;color:#f59e0b;line-height:1.1">${Math.round(cumC)}g</div>` +
+    /* 보급 구간 팝업 — 사이드바와 1:1 대응 (b.carb, b.water, b.salt) */
+    const icon2 = b.type === 'UPHILL' ? '🔺' : b.type === 'DOWN' ? '🔽' : '➡️';
+    const zPop  =
+      `<div style="color:#111;font-size:12px;line-height:1.7;min-width:160px">` +
+      `<b style="font-size:13px">⚡ 보급 구간</b>` +
+      `<div style="font-size:10px;color:#666;margin-bottom:5px">${b.startKm.toFixed(1)} ~ ${b.endKm.toFixed(1)}km &nbsp;·&nbsp; ${icon2} ${b.type}</div>` +
+      `<hr style="border:none;border-top:1px solid #ddd;margin:5px 0">` +
+      `<div style="font-size:24px;font-weight:900;color:#d97706;line-height:1.1">${b.carb}g</div>` +
       `<div style="font-size:10px;color:#888;margin-bottom:5px">탄수화물</div>` +
-      `<div style="font-size:12px;color:#444">💧 ${Math.round(cumW)}ml &nbsp; 💊 ${cumSalt}mg</div>` +
+      `<div style="font-size:12px;color:#444">💧 ${b.water}ml &nbsp; 💊 ${b.salt}mg</div>` +
+      `<div style="font-size:9px;color:#aaa;margin-top:6px;border-top:1px solid #eee;padding-top:5px">이 구간 내 분산 섭취</div>` +
       `</div>`;
-    L.marker([closest.lat, closest.lon], {icon: supIcon})
-     .on('click', () => { if(closestIdx >= 0){ selectedIndex = closestIdx; chart.update(); } })
-     .bindPopup(sPop)
-     .addTo(markerGroup);
-  });
 
+    /* 선명한 앰버 오버레이 폴리라인 (7px, 0.82 불투명도) */
+    L.polyline(zPts.map(p => [p.lat, p.lon]), {
+      color: '#f59e0b', weight: 7, opacity: 0.82
+    }).on('click', (e) => {
+      if (zMidIdx >= 0) { selectedIndex = zMidIdx; chart.update(); }
+      L.popup().setLatLng(e.latlng).setContent(zPop).openOn(lMap);
+    }).addTo(markerGroup);
+  });
 
 
   renderTerrainTab(_tBlocks);
