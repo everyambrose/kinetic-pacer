@@ -326,6 +326,7 @@ input[type=range] { accent-color:var(--green); cursor:pointer; }
 <script>
 let gPts=[], lMap=null, markerGroup=null, polyline=null, chart=null, selectedIndex=-1, avgGapFactor=1.0;
 let lastResultData = [];
+let highlightLayer = null;  /* v10.27: 지형 블록 클릭 하이라이트 */
 
 /* ===== ABSORPTION TIMING CONSTANTS (minutes) =====
    Based on:
@@ -787,7 +788,15 @@ function generateStrategy() {
       dashArray: isCutoff ? '6 5' : null
     }).on('click', (e) => {
       if (midIdx >= 0) { selectedIndex = midIdx; chart.update(); }
-      L.popup().setLatLng(e.latlng).setContent(popupHtml).openOn(lMap);
+      /* v10.27: 클릭한 지형 블록 하이라이트 */
+      if (highlightLayer) { markerGroup.removeLayer(highlightLayer); highlightLayer = null; }
+      highlightLayer = L.polyline(bPts.map(p => [p.lat, p.lon]), {
+        color: '#ffffff', weight: 8, opacity: 0.55, lineCap: 'round', lineJoin: 'round'
+      }).addTo(markerGroup);
+      const _pop = L.popup().setLatLng(e.latlng).setContent(popupHtml).openOn(lMap);
+      lMap.once('popupclose', () => {
+        if (highlightLayer) { markerGroup.removeLayer(highlightLayer); highlightLayer = null; }
+      });
     }).addTo(markerGroup);
 
     /* v10.26: PRE-LOAD·CUTOFF 배지 제거 (오버레이 구간으로 충분) */
