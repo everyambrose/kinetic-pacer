@@ -772,21 +772,12 @@ function generateStrategy() {
       popupHtml = `<div style="color:#111;font-size:12px;min-width:175px;line-height:1.8"><b style="font-size:13px">${icon} ${b.type}</b><br><span style="font-size:10px;color:#666">${b.startKm.toFixed(1)} ~ ${b.endKm.toFixed(1)}km &nbsp;&bull;&nbsp; ${gainStr} &nbsp;&bull;&nbsp; 약${b.estimatedMin}분</span><hr style="border:none;border-top:1px solid #ddd;margin:5px 0">⚡ <b>${b.carb}g</b> &nbsp; 💧 <b>${b.water}ml</b> &nbsp; 💊 <b>${b.salt}mg</b></div>`;
     }
 
-    /* v10.20: 네온 글로우 이중 폴리라인 — 알 테마 #3ddc84로 통일감 */
-    const rCore  = isFirst ? '#1a6b3a' : isCutoff ? '#374151' : '#3ddc84';
-    const rGlow  = isFirst ? '#3ddc84' : isCutoff ? '#4b5563' : '#3ddc84';
-    const rWCore = isFirst ? 2.5 : isCutoff ? 3 : 3.5;
-    const rWGlow = isFirst ? 8   : isCutoff ? 6 : 12;
-    const rOCore = isCutoff ? 0.40 : isFirst ? 0.55 : 0.95;
-    const rOGlow = isCutoff ? 0.06 : isFirst ? 0.10 : 0.18;
-    /* 글로우 레이어 (클릭 구역 없음) */
+    /* v10.22: 단일 선 — 글로우 제거, 고도차트와 동일한 #3ddc84 */
+    const rCol = isFirst ? '#2a7a52' : isCutoff ? '#374151' : '#3ddc84';
     L.polyline(bPts.map(p => [p.lat, p.lon]), {
-      color: rGlow, weight: rWGlow, opacity: rOGlow,
-      dashArray: isCutoff ? '6 5' : null
-    }).addTo(markerGroup);
-    /* 코어 레이어 (클릭 이벤트) */
-    L.polyline(bPts.map(p => [p.lat, p.lon]), {
-      color: rCore, weight: rWCore, opacity: rOCore,
+      color: rCol,
+      weight: isFirst ? 3 : 4,
+      opacity: isCutoff ? 0.38 : isFirst ? 0.52 : 0.88,
       dashArray: isCutoff ? '6 5' : null
     }).on('click', (e) => {
       if (midIdx >= 0) { selectedIndex = midIdx; chart.update(); }
@@ -798,61 +789,54 @@ function generateStrategy() {
     if (isCutoff) L.marker([mid.lat, mid.lon], {icon: mkSmallBadge('⏱ CUTOFF', '#666')}).addTo(markerGroup);
   });
 
-  /* v10.21: 에너지 예산 워크 (Energy Budget Walk)
-     - isPreUphill/isLong 지형 패턴 완전 제거
-     - 탄수화물 잔량(carbBudget) 추적 → 소진 시점에 보급 구간 자동 생성
-     - SUPPLY_AMT = absorptionRate × gel_interval_hr (사이드바 인터벌과 자동 일치)
-     - 표시는 CHO 총량(g)만 — 젤/CP 조합은 선수 재량 */
-  const _preLoadEndKm  = _tBlocks[0] ? _tBlocks[0].endKm : 3;
-  const demandRateZ    = 65 * avgGapFactor * weightFactor;
-  const absorptionRateZ = Math.min(demandRateZ, 85);   /* g/hr 흡수 한계 */
-  const preloadBudget  = Math.max(
-    absorptionRateZ * 0.5,                              /* 최소 30분치 글리코겐 */
-    Math.round((demandRateZ - absorptionRateZ) * tHr)   /* 프리로딩 결핍량 */
+  /* v10.22: 에너지 예산 워크 — 구간 수 현실화
+     SUPPLY_AMT = absorptionRate×1.5hr, MIN_ZONE_GAP = max(6km,7%)
+     글로우 제거 → 단순 골드 선으로 색 구분만 */
+  const _preLoadEndKm   = _tBlocks[0] ? _tBlocks[0].endKm : 3;
+  const demandRateZ     = 65 * avgGapFactor * weightFactor;
+  const absorptionRateZ = Math.min(demandRateZ, 85);
+  const preloadBudget   = Math.max(
+    absorptionRateZ * 1.0,
+    Math.round((demandRateZ - absorptionRateZ) * tHr)
   );
-  const gelIntervalHr  = parseFloat(gel_gap.value) * paceMinPerKm / 60;
-  const SUPPLY_AMT     = absorptionRateZ * gelIntervalHr;  /* 1인터벌 흡수량 */
-  const LOW_THRESH     = Math.max(15, SUPPLY_AMT * 0.35);  /* 잔량 35% → 보급 시작 */
-  const ZONE_LEAD_KM   = Math.max(0.5, gelIntervalHr * paceMinPerKm * 0.6); /* 리드 거리 */
+  const SUPPLY_AMT   = absorptionRateZ * 1.5;
+  const MIN_ZONE_GAP = Math.max(6.0, totalK * 0.07);
+  const LOW_THRESH   = Math.max(20, SUPPLY_AMT * 0.30);
+  const ZONE_LEAD_KM = Math.max(1.0, MIN_ZONE_GAP * 0.25);
 
-  /* === 에너지 예산 워크 === */
-  let carbBudget  = preloadBudget;
-  let inZone      = false;
-  let zoneStartKm = 0;
-  const supplyZones = [];   /* {startKm, endKm, carbNeeded} */
+  let carbBudget    = preloadBudget;
+  let inZone        = false;
+  let zoneStartKm   = 0;
+  let lastZoneEndKm = _preLoadEndKm - MIN_ZONE_GAP;
+  const supplyZones = [];
 
   gPts.forEach((p, pi) => {
     if (pi === 0) return;
-    const pr = gPts[pi - 1];
-    const d  = p.distKm - pr.distKm;
+    const pr = gPts[pi - 1], d = p.distKm - pr.distKm;
     if (d <= 0 || pr.distKm < _preLoadEndKm || p.distKm > _cutKm) return;
+    const gf = getGapF((p.ele - pr.ele) / (d * 1000));
+    carbBudget -= Math.min(65 * gf * weightFactor, 85) * (tSec / (totalK * 3600)) * d;
 
-    const gf       = getGapF((p.ele - pr.ele) / (d * 1000));
-    const consumed = Math.min(65 * gf * weightFactor, 85) * (tSec / (totalK * 3600)) * d;
-    carbBudget    -= consumed;
-
-    /* 보급 구간 시작: 잔량이 LOW_THRESH 이하로 떨어지면 ZONE_LEAD_KM 앞부터 */
-    if (!inZone && carbBudget <= LOW_THRESH) {
+    if (!inZone && carbBudget <= LOW_THRESH
+        && p.distKm >= lastZoneEndKm + MIN_ZONE_GAP) {
       zoneStartKm = Math.max(_preLoadEndKm, p.distKm - ZONE_LEAD_KM);
-      inZone      = true;
+      inZone = true;
     }
-    /* 보급 구간 종료: 잔량이 0 이하 → 여기서 반드시 보급 완료되어야 함 */
     if (inZone && carbBudget <= 0) {
       supplyZones.push({ startKm: zoneStartKm, endKm: p.distKm });
+      lastZoneEndKm = p.distKm;
       carbBudget += SUPPLY_AMT;
-      inZone      = false;
+      inZone = false;
     }
   });
 
-  /* === 보급 구간 렌더링 === */
+  /* === 렌더링: 단순 골드 선 + 소형 배지 === */
   supplyZones.forEach(z => {
-    const zPts    = gPts.filter(p => p.distKm >= z.startKm && p.distKm <= z.endKm);
+    const zPts = gPts.filter(p => p.distKm >= z.startKm && p.distKm <= z.endKm);
     if (zPts.length < 2) return;
-
-    const zMid    = zPts[Math.floor(zPts.length / 2)];
+    const zMid = zPts[Math.floor(zPts.length / 2)];
     const zMidIdx = gPts.indexOf(zMid);
 
-    /* 이 구간의 실제 CHO 소모량 (b.carb 대신 직접 계산) */
     let zCarb = 0, zWater = 0;
     gPts.forEach((p, pi) => {
       if (pi === 0) return;
@@ -866,7 +850,7 @@ function generateStrategy() {
     const zSalt  = Math.round(Math.max(50, Math.min(800, (waterRate * zSecHr / 1000) * sweatNaConc * 0.75)));
 
     const zPop =
-      `<div style="color:#111;font-size:12px;line-height:1.7;min-width:160px">` +
+      `<div style="color:#111;font-size:12px;line-height:1.7;min-width:155px">` +
       `<b style="font-size:13px">⚡ 보급 구간</b>` +
       `<div style="font-size:10px;color:#666;margin-bottom:5px">${z.startKm.toFixed(1)} ~ ${z.endKm.toFixed(1)}km</div>` +
       `<hr style="border:none;border-top:1px solid #ddd;margin:5px 0">` +
@@ -875,26 +859,21 @@ function generateStrategy() {
       `<div style="font-size:12px;color:#444">💧 ${Math.round(zWater)}ml &nbsp; 💊 ${zSalt}mg</div>` +
       `</div>`;
 
-    /* 글로우 레이어 */
+    /* 단순 골드 선 (글로우 없음, 색 구분만) */
     L.polyline(zPts.map(p => [p.lat, p.lon]), {
-      color: '#fbbf24', weight: 18, opacity: 0.20
-    }).addTo(markerGroup);
-    /* 코어 레이어 (클릭) */
-    L.polyline(zPts.map(p => [p.lat, p.lon]), {
-      color: '#fbbf24', weight: 6, opacity: 0.95
+      color: '#fbbf24', weight: 5, opacity: 0.90
     }).on('click', (e) => {
       if (zMidIdx >= 0) { selectedIndex = zMidIdx; chart.update(); }
       L.popup().setLatLng(e.latlng).setContent(zPop).openOn(lMap);
     }).addTo(markerGroup);
 
-    /* 구간 시작 글로우 배지 */
-    const zStart = zPts[0];
-    if (zStart) {
-      L.marker([zStart.lat, zStart.lon], {
+    /* 소형 배지 (구간 ≥ 2km일 때만) */
+    if (z.endKm - z.startKm >= 2.0 && zPts[0]) {
+      L.marker([zPts[0].lat, zPts[0].lon], {
         icon: L.divIcon({
           className: '',
-          html: `<div style="background:#fbbf24;color:#1a1a1a;padding:2px 8px;border-radius:8px;font-size:10px;font-weight:800;box-shadow:0 0 10px rgba(251,191,36,0.7),0 2px 6px rgba(0,0,0,0.7);white-space:nowrap;border:1px solid rgba(255,255,255,0.4)">⚡ ${z.startKm.toFixed(1)}km</div>`,
-          iconSize: [null, 20], iconAnchor: [0, 10]
+          html: `<div style="background:#fbbf24;color:#1a1a1a;padding:2px 7px;border-radius:6px;font-size:9px;font-weight:800;box-shadow:0 1px 4px rgba(0,0,0,0.5);white-space:nowrap">⚡ ${z.startKm.toFixed(1)}km</div>`,
+          iconSize: [null, 18], iconAnchor: [0, 9]
         })
       }).bindPopup(zPop).addTo(markerGroup);
     }
