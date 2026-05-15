@@ -1,0 +1,18 @@
+{
+  "name": "Kinetic Pacer",
+  "short_name": "KP",
+  "description": "GPX 기반 트레일 러닝 보급 전략 시뮬레이터",
+  "start_url": "/kinetic-pacer/",
+  "scope": "/kinetic-pacer/",
+  "display": "standalone",
+  "background_color": "#05070a",
+  "theme_color": "#3ddc84",
+  "orientation": "any",
+  "lang": "ko",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ],
+  "screenshots": [],
+  "categories": ["sports", "health", "utilities"]
+}
