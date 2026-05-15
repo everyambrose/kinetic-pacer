@@ -772,11 +772,21 @@ function generateStrategy() {
       popupHtml = `<div style="color:#111;font-size:12px;min-width:175px;line-height:1.8"><b style="font-size:13px">${icon} ${b.type}</b><br><span style="font-size:10px;color:#666">${b.startKm.toFixed(1)} ~ ${b.endKm.toFixed(1)}km &nbsp;&bull;&nbsp; ${gainStr} &nbsp;&bull;&nbsp; 약${b.estimatedMin}분</span><hr style="border:none;border-top:1px solid #ddd;margin:5px 0">⚡ <b>${b.carb}g</b> &nbsp; 💧 <b>${b.water}ml</b> &nbsp; 💊 <b>${b.salt}mg</b></div>`;
     }
 
-    /* v10.19: 루트 색상 — #60a5fa 블루 (다크맵 위 시인성 최적) */
+    /* v10.20: 네온 글로우 이중 폴리라인 — 알 테마 #3ddc84로 통일감 */
+    const rCore  = isFirst ? '#1a6b3a' : isCutoff ? '#374151' : '#3ddc84';
+    const rGlow  = isFirst ? '#3ddc84' : isCutoff ? '#4b5563' : '#3ddc84';
+    const rWCore = isFirst ? 2.5 : isCutoff ? 3 : 3.5;
+    const rWGlow = isFirst ? 8   : isCutoff ? 6 : 12;
+    const rOCore = isCutoff ? 0.40 : isFirst ? 0.55 : 0.95;
+    const rOGlow = isCutoff ? 0.06 : isFirst ? 0.10 : 0.18;
+    /* 글로우 레이어 (클릭 구역 없음) */
     L.polyline(bPts.map(p => [p.lat, p.lon]), {
-      color: isFirst ? '#38bdf8' : isCutoff ? '#475569' : '#60a5fa',
-      weight: isFirst ? 3.5 : 4.5,
-      opacity: isCutoff ? 0.35 : isFirst ? 0.50 : 0.85,
+      color: rGlow, weight: rWGlow, opacity: rOGlow,
+      dashArray: isCutoff ? '6 5' : null
+    }).addTo(markerGroup);
+    /* 코어 레이어 (클릭 이벤트) */
+    L.polyline(bPts.map(p => [p.lat, p.lon]), {
+      color: rCore, weight: rWCore, opacity: rOCore,
       dashArray: isCutoff ? '6 5' : null
     }).on('click', (e) => {
       if (midIdx >= 0) { selectedIndex = midIdx; chart.update(); }
@@ -788,20 +798,23 @@ function generateStrategy() {
     if (isCutoff) L.marker([mid.lat, mid.lon], {icon: mkSmallBadge('⏱ CUTOFF', '#666')}).addTo(markerGroup);
   });
 
-  /* v10.18: 보급권장 구간 오버레이
-     - UPHILL 블록 제외: 업힐은 소모 구간, 보급은 평지/다운힐에서 → 겹침 해소
-     - isLong 동적: totalK × 8% 이상 (100km=8km, 50km=6km)
-     - 구간 시작점에 ⚡ Xkm 앰버 배지 추가 */
+  /* v10.20: 보급권장 구간 오버레이
+     - 첫 보급 강제 트리거: 프리로딩 종료 후 10km 이내 첫 비업힐 블록
+     - 골드 글로우+코어 이중 폴리라인 */
   const _preLoadEndKm = _tBlocks[0] ? _tBlocks[0].endKm : 3;
   const _longThresh   = Math.max(6, totalK * 0.08);
+  const MAX_FIRST_GAP = 10.0;
+  let _hasFirstSupply = false;
   _tBlocks.forEach((b, idx) => {
     if (b.startKm < _preLoadEndKm || b.endKm > _cutKm) return;
-    if (b.type === 'UPHILL') return;  /* 업힐 블록은 보급 하이라이트 제외 */
+    if (b.type === 'UPHILL') return;
 
     const nextB = _tBlocks[idx + 1];
-    const isPreUphill = nextB && nextB.type === 'UPHILL' && nextB.startKm < _cutKm;
-    const isLong      = (b.endKm - b.startKm) >= _longThresh;
-    if (!isPreUphill && !isLong) return;
+    const isPreUphill   = nextB && nextB.type === 'UPHILL' && nextB.startKm < _cutKm;
+    const isLong        = (b.endKm - b.startKm) >= _longThresh;
+    const isFirstForced = !_hasFirstSupply && b.startKm <= _preLoadEndKm + MAX_FIRST_GAP;
+    if (!isPreUphill && !isLong && !isFirstForced) return;
+    _hasFirstSupply = true;
 
     const zPts = gPts.filter(p => p.distKm >= b.startKm && p.distKm <= b.endKm);
     if (zPts.length < 2) return;
@@ -809,7 +822,6 @@ function generateStrategy() {
     const zMid    = zPts[Math.floor(zPts.length / 2)];
     const zMidIdx = gPts.indexOf(zMid);
 
-    /* 보급 구간 팝업 — 사이드바와 1:1 대응 */
     const icon2 = b.type === 'DOWN' ? '🔽' : '➡️';
     const zPop  =
       `<div style="color:#111;font-size:12px;line-height:1.7;min-width:160px">` +
@@ -822,21 +834,25 @@ function generateStrategy() {
       `<div style="font-size:9px;color:#aaa;margin-top:6px;border-top:1px solid #eee;padding-top:5px">이 구간 내 분산 섭취</div>` +
       `</div>`;
 
-    /* v10.19: 보급 오버레이 — #fbbf24 골드 (블루 루트와 최대 대비) */
+    /* 글로우 레이어 */
     L.polyline(zPts.map(p => [p.lat, p.lon]), {
-      color: '#fbbf24', weight: 8, opacity: 0.92
+      color: '#fbbf24', weight: 18, opacity: 0.20
+    }).addTo(markerGroup);
+    /* 코어 레이어 (클릭) */
+    L.polyline(zPts.map(p => [p.lat, p.lon]), {
+      color: '#fbbf24', weight: 6, opacity: 0.95
     }).on('click', (e) => {
       if (zMidIdx >= 0) { selectedIndex = zMidIdx; chart.update(); }
       L.popup().setLatLng(e.latlng).setContent(zPop).openOn(lMap);
     }).addTo(markerGroup);
 
-    /* v10.18: 구간 시작점 ⚡ Xkm 배지 마커 */
+    /* 시작점 글로우 배지 */
     const zStart = zPts[0];
     if (zStart) {
       L.marker([zStart.lat, zStart.lon], {
         icon: L.divIcon({
           className: '',
-          html: `<div style="background:#fbbf24;color:#1a1a1a;padding:2px 8px;border-radius:8px;font-size:10px;font-weight:800;box-shadow:0 2px 6px rgba(0,0,0,0.7);white-space:nowrap;border:1px solid rgba(255,255,255,0.4)">⚡ ${b.startKm.toFixed(1)}km</div>`,
+          html: `<div style="background:#fbbf24;color:#1a1a1a;padding:2px 8px;border-radius:8px;font-size:10px;font-weight:800;box-shadow:0 0 10px rgba(251,191,36,0.7),0 2px 6px rgba(0,0,0,0.7);white-space:nowrap;border:1px solid rgba(255,255,255,0.4)">⚡ ${b.startKm.toFixed(1)}km</div>`,
           iconSize: [null, 20], iconAnchor: [0, 10]
         })
       }).bindPopup(zPop).addTo(markerGroup);
