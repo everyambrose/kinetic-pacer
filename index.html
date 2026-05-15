@@ -787,13 +787,13 @@ function generateStrategy() {
     if (isCutoff) L.marker([mid.lat, mid.lon], {icon: mkSmallBadge('⏱ CUTOFF', '#666')}).addTo(markerGroup);
   });
 
-  /* v10.15: 보급 마커 = 블록 진입 시점 (b.startKm)
-     기존: b.endKm (블록 끝 = 이미 지나온 구간의 끝에서 보급 안내 → 혼동)
-     수정: b.startKm (블록 시작 = 구간 진입 시 보급 안내 → 사이드바와 일치) */
-  const MIN_SUPPLY_GAP = 7.0;
+  /* v10.16: 보급 마커 정렬 개선
+     - MIN_SUPPLY_GAP 7→5km: 사이드바 블록 단위와 더 근접
+     - _lastTrigKm = _preLoadEndKm - MIN_SUPPLY_GAP: 프리로딩 직후 첫 블록에서 즉시 트리거 */
+  const MIN_SUPPLY_GAP = 5.0;
   const _preLoadEndKm = _tBlocks[0] ? _tBlocks[0].endKm : 3;
   const _supplyKms = [];
-  let _lastTrigKm = 0;
+  let _lastTrigKm = _preLoadEndKm - MIN_SUPPLY_GAP;
   _tBlocks.forEach((b, idx) => {
     if (b.startKm < _preLoadEndKm || b.startKm >= _cutKm) return;
     if (b.startKm - _lastTrigKm >= MIN_SUPPLY_GAP) {
@@ -819,29 +819,22 @@ function generateStrategy() {
     gPts.forEach(p => { if (Math.abs(p.distKm - s.km) < Math.abs(closest.distKm - s.km)) closest = p; });
     const closestIdx = gPts.indexOf(closest);
 
-    /* 다음 terrain 블록 색상 (마커 컬러용) */
-    const nb = s.nextBlock;
-    let bc = '#f97316';
-    if (nb) {
-      const nUp = nb.type === 'UPHILL', nDn = nb.type === 'DOWN';
-      bc = nUp ? '#f97316' : nDn ? '#38bdf8' : '#8a95a0';
-    }
+    /* v10.16: 단일 색상 (앰버) — 지형 색과 독립, 수분(파랑) 혼동 방지 */
+    const bc = '#f59e0b';
     const spanKm = (nextKm - s.km).toFixed(1);
     const estMin  = Math.round(secHr * 60);
-    const supplyNum = i + 1;  /* 보급 순서 번호 */
 
-    /* v10.14: 마커 아이콘 — ⚡ + km 배지 */
     const supIcon = L.divIcon({
       className: '',
-      html: `<div style="background:${bc};color:#fff;padding:3px 9px;border-radius:12px;font-size:11px;font-weight:700;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,0.7);border:1px solid rgba(255,255,255,0.25);line-height:1.4">⚡ ${s.km.toFixed(1)}km</div>`,
+      html: `<div style="background:#f59e0b;color:#1a1a1a;padding:3px 9px;border-radius:12px;font-size:11px;font-weight:800;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,0.7);border:1px solid rgba(255,255,255,0.3);line-height:1.4">⚡ ${s.km.toFixed(1)}km</div>`,
       iconSize: [null, 22], iconAnchor: [0, 11]
     });
 
-    /* 팝업 — ⚡ + 구간 km + 숫자 3줄 */
+    /* 팝업 — 앰버 강조 + 구간 km + 수치 3줄 */
     const sPop =
       `<div style="color:#111;font-size:12px;line-height:1.6;min-width:140px;text-align:center;padding:2px 4px">` +
       `<div style="font-size:11px;color:#666;margin-bottom:4px">${s.km.toFixed(1)} → ${nextKm.toFixed(1)}km &nbsp;·&nbsp; ${spanKm}km</div>` +
-      `<div style="font-size:30px;font-weight:900;color:${bc};line-height:1.1">${Math.round(cumC)}g</div>` +
+      `<div style="font-size:30px;font-weight:900;color:#f59e0b;line-height:1.1">${Math.round(cumC)}g</div>` +
       `<div style="font-size:10px;color:#888;margin-bottom:5px">탄수화물</div>` +
       `<div style="font-size:12px;color:#444">💧 ${Math.round(cumW)}ml &nbsp; 💊 ${cumSalt}mg</div>` +
       `</div>`;
