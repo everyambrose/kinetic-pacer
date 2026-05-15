@@ -772,20 +772,26 @@ function generateStrategy() {
       popupHtml = `<div style="color:#111;font-size:12px;min-width:175px;line-height:1.8"><b style="font-size:13px">${icon} ${b.type}</b><br><span style="font-size:10px;color:#666">${b.startKm.toFixed(1)} ~ ${b.endKm.toFixed(1)}km &nbsp;&bull;&nbsp; ${gainStr} &nbsp;&bull;&nbsp; 약${b.estimatedMin}분</span><hr style="border:none;border-top:1px solid #ddd;margin:5px 0">⚡ <b>${b.carb}g</b> &nbsp; 💧 <b>${b.water}ml</b> &nbsp; 💊 <b>${b.salt}mg</b></div>`;
     }
 
-    /* v10.22: 단일 선 — 글로우 제거, 고도차트와 동일한 #3ddc84 */
-    const rCol = isFirst ? '#2a7a52' : isCutoff ? '#374151' : '#3ddc84';
+    /* v10.24: 루트 단일 선 */
+    const rCol = isFirst ? '#3ddc84' : isCutoff ? '#374151' : '#3ddc84';
+    /* PRE-LOAD 구간: 반투명 오버레이로 구간 강조 */
+    if (isFirst) {
+      L.polyline(bPts.map(p => [p.lat, p.lon]), {
+        color: '#3ddc84', weight: 12, opacity: 0.22
+      }).addTo(markerGroup);
+    }
     L.polyline(bPts.map(p => [p.lat, p.lon]), {
       color: rCol,
-      weight: isFirst ? 3 : 4,
-      opacity: isCutoff ? 0.38 : isFirst ? 0.52 : 0.88,
+      weight: isFirst ? 4 : 4,
+      opacity: isCutoff ? 0.38 : isFirst ? 0.70 : 0.88,
       dashArray: isCutoff ? '6 5' : null
     }).on('click', (e) => {
       if (midIdx >= 0) { selectedIndex = midIdx; chart.update(); }
       L.popup().setLatLng(e.latlng).setContent(popupHtml).openOn(lMap);
     }).addTo(markerGroup);
 
-    /* PRE-LOAD / CUTOFF 전용 소형 배지 */
-    if (isFirst)  L.marker([mid.lat, mid.lon], {icon: mkSmallBadge('⚡ PRE-LOAD', '#3ddc84')}).addTo(markerGroup);
+    /* PRE-LOAD 시작점 배지 */
+    if (isFirst)  L.marker([bPts[0].lat, bPts[0].lon], {icon: mkSmallBadge('⚡ PRE-LOAD', '#3ddc84')}).addTo(markerGroup);
     if (isCutoff) L.marker([mid.lat, mid.lon], {icon: mkSmallBadge('⏱ CUTOFF', '#666')}).addTo(markerGroup);
   });
 
@@ -860,21 +866,25 @@ function generateStrategy() {
       `<div style="font-size:12px;color:#444">💧 ${Math.round(zWater)}ml &nbsp; 💊 ${zSalt}mg</div>` +
       `</div>`;
 
-    /* 단순 골드 선 (글로우 없음, 색 구분만) */
-    L.polyline(zPts.map(p => [p.lat, p.lon]), {
-      color: '#fbbf24', weight: 5, opacity: 0.90
-    }).on('click', (e) => {
-      if (zMidIdx >= 0) { selectedIndex = zMidIdx; chart.update(); }
-      L.popup().setLatLng(e.latlng).setContent(zPop).openOn(lMap);
-    }).addTo(markerGroup);
-
-    /* 소형 배지 (구간 ≥ 2km일 때만) */
-    if (z.endKm - z.startKm >= 2.0 && zPts[0]) {
+    /* v10.24: 폴리라인 제거 → 원형 아이콘 + km 배지만 표시 */
+    if (zPts[0]) {
       L.marker([zPts[0].lat, zPts[0].lon], {
         icon: L.divIcon({
           className: '',
-          html: `<div style="background:#fbbf24;color:#1a1a1a;padding:2px 7px;border-radius:6px;font-size:9px;font-weight:800;box-shadow:0 1px 4px rgba(0,0,0,0.5);white-space:nowrap">⚡ ${z.startKm.toFixed(1)}km</div>`,
-          iconSize: [null, 18], iconAnchor: [0, 9]
+          html: `<div style="
+            width:34px;height:34px;
+            background:#fbbf24;
+            border-radius:50%;
+            display:flex;flex-direction:column;
+            align-items:center;justify-content:center;
+            box-shadow:0 2px 8px rgba(0,0,0,0.55);
+            border:2px solid rgba(255,255,255,0.35);
+            transform:translate(-17px,-34px)
+          ">
+            <span style="font-size:13px;line-height:1">⚡</span>
+            <span style="font-size:7px;font-weight:900;line-height:1.2;color:#1a1a1a">${z.startKm.toFixed(0)}km</span>
+          </div>`,
+          iconSize: [34, 34], iconAnchor: [17, 34]
         })
       }).bindPopup(zPop).addTo(markerGroup);
     }
