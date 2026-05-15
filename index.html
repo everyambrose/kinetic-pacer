@@ -790,9 +790,7 @@ function generateStrategy() {
       L.popup().setLatLng(e.latlng).setContent(popupHtml).openOn(lMap);
     }).addTo(markerGroup);
 
-    /* PRE-LOAD 시작점 배지 */
-    if (isFirst)  L.marker([bPts[0].lat, bPts[0].lon], {icon: mkSmallBadge('⚡ PRE-LOAD', '#3ddc84')}).addTo(markerGroup);
-    if (isCutoff) L.marker([mid.lat, mid.lon], {icon: mkSmallBadge('⏱ CUTOFF', '#666')}).addTo(markerGroup);
+    /* v10.26: PRE-LOAD·CUTOFF 배지 제거 (오버레이 구간으로 충분) */
   });
 
   /* v10.22: 에너지 예산 워크 — 구간 수 현실화
@@ -895,15 +893,18 @@ function generateStrategy() {
       L.popup().setLatLng(e.latlng).setContent(zPop).openOn(lMap);
     }).addTo(markerGroup);
 
-    /* v10.25: ⚡ Xkm 텍스트 마커만 (도형 없음) */
+    /* v10.26: 흰색 텍스트 마커 + 클릭 시 고도차트 연동 */
     if (zPts[0]) {
       L.marker([zPts[0].lat, zPts[0].lon], {
         icon: L.divIcon({
           className: '',
-          html: `<div style="color:#fbbf24;font-size:12px;font-weight:900;white-space:nowrap;text-shadow:0 1px 4px rgba(0,0,0,0.95),0 0 8px rgba(0,0,0,0.8);line-height:1;transform:translate(4px,-100%)">⚡ ${z.startKm.toFixed(0)}km</div>`,
+          html: `<div style="color:#fff;font-size:12px;font-weight:900;white-space:nowrap;text-shadow:0 1px 5px rgba(0,0,0,0.98),0 0 10px rgba(0,0,0,0.9);line-height:1;transform:translate(4px,-100%)">⚡ ${z.startKm.toFixed(0)}km</div>`,
           iconSize: [null, 14], iconAnchor: [0, 14]
         })
-      }).bindPopup(zPop).addTo(markerGroup);
+      })
+      .on('click', () => { if (zMidIdx >= 0) { selectedIndex = zMidIdx; chart.update(); } })
+      .bindPopup(zPop)
+      .addTo(markerGroup);
     }
   });
 
