@@ -787,17 +787,19 @@ function generateStrategy() {
     const isFirst  = bIdx === 0;
     const isCutoff = b.startKm >= _cutKm;
     const terrainCol = up ? '#f97316' : dn ? '#38bdf8' : '#3ddc84';
-    const rCol = terrainCol;  /* v10.29: cutoff 블록도 지형 색상 유지 */
     const mid    = b.mid    || bPts[Math.floor(bPts.length / 2)];
     const midIdx = (b.midIdx != null) ? b.midIdx : gPts.indexOf(mid);
     const popupHtml = b.popupHtml || '';
+
+    /* v10.31: 경로 단색 — 크림/낮은 녹색으로 통일 */
     L.polyline(bPts.map(p => [p.lat, p.lon]), {
-      color: rCol, weight: 4, opacity: 0.88
+      color: '#4ade80', weight: 3.5, opacity: 0.75
     }).on('click', (e) => {
       if (midIdx >= 0) { selectedIndex = midIdx; chart.update(); }
       if (highlightLayer) { markerGroup.removeLayer(highlightLayer); highlightLayer = null; }
+      /* v10.31: 클릭 시 지형 색으로 하이라이트 */
       highlightLayer = L.polyline(bPts.map(p => [p.lat, p.lon]), {
-        color: '#ffffff', weight: 8, opacity: 0.55, lineCap: 'round', lineJoin: 'round'
+        color: terrainCol, weight: 8, opacity: 0.65, lineCap: 'round', lineJoin: 'round'
       }).addTo(markerGroup);
       L.popup().setLatLng(e.latlng).setContent(popupHtml).openOn(lMap);
       lMap.once('popupclose', () => {
@@ -805,11 +807,42 @@ function generateStrategy() {
       });
     }).addTo(markerGroup);
 
-    /* v10.30: 원형 마커 데이터를 배열에 보관 — 보급 마커 충돌 감지 후 나중에 렌더링 */
+    /* v10.30: 원형 마커 데이터를 배열에 보관 */
     if (!isFirst && !isCutoff && mid) {
       _pendingCircles.push({ mid, midIdx, bPts, terrainCol, popupHtml });
     }
   });
+
+  /* v10.31: 레이스 방향 화살표 — 전체 경로에 일정 간격으로 방향 표시 */
+  (function renderArrows() {
+    const ARROW_INTERVAL_KM = Math.max(3, totalK * 0.06); /* ~6% 간격 */
+    let nextArrowKm = ARROW_INTERVAL_KM;
+    for (let i = 1; i < gPts.length; i++) {
+      const p = gPts[i], pr = gPts[i - 1];
+      if (p.distKm < nextArrowKm) continue;
+      nextArrowKm += ARROW_INTERVAL_KM;
+      /* bearing 계산 */
+      const dLat = p.lat - pr.lat, dLon = p.lon - pr.lon;
+      const angle = Math.atan2(dLon, dLat) * 180 / Math.PI;
+      L.marker([p.lat, p.lon], {
+        icon: L.divIcon({
+          className: '',
+          html: `<div style="
+            width:0;height:0;
+            border-left:5px solid transparent;
+            border-right:5px solid transparent;
+            border-bottom:11px solid rgba(255,255,255,0.55);
+            transform:rotate(${angle}deg);
+            transform-origin:center center;
+            filter:drop-shadow(0 1px 3px rgba(0,0,0,0.7));
+          "></div>`,
+          iconSize: [10, 11],
+          iconAnchor: [5, 5.5]
+        }),
+        interactive: false
+      }).addTo(markerGroup);
+    }
+  })();
 
   /* v10.29: 커트오프 km에 단독 언제 종료 마커 표시 */
   const _cutPt = gPts.reduce((a, p) => Math.abs(p.distKm - _cutKm) < Math.abs(a.distKm - _cutKm) ? p : a, gPts[0]);
@@ -893,13 +926,14 @@ function generateStrategy() {
     const tooClose = supplyKmSet.some(skm => Math.abs(mid.distKm - skm) < CIRCLE_SUPPLY_GAP);
     if (tooClose) return;
     L.circleMarker([mid.lat, mid.lon], {
-      radius: 6, color: '#000', weight: 1.5,
-      fillColor: terrainCol, fillOpacity: 0.95
+      radius: 7, color: '#fff', weight: 1.5,
+      fillColor: terrainCol, fillOpacity: 1.0
     }).on('click', (e) => {
       if (midIdx >= 0) { selectedIndex = midIdx; chart.update(); }
       if (highlightLayer) { markerGroup.removeLayer(highlightLayer); highlightLayer = null; }
+      /* v10.31: 클릭 시 지형색 하이라이트 */
       highlightLayer = L.polyline(bPts.map(p => [p.lat, p.lon]), {
-        color: '#ffffff', weight: 8, opacity: 0.55, lineCap: 'round', lineJoin: 'round'
+        color: terrainCol, weight: 8, opacity: 0.65, lineCap: 'round', lineJoin: 'round'
       }).addTo(markerGroup);
       L.popup().setLatLng(e.latlng).setContent(popupHtml).openOn(lMap);
       lMap.once('popupclose', () => {
@@ -984,7 +1018,7 @@ function generateStrategy() {
             border:1.5px solid rgba(255,255,255,0.3);
             letter-spacing:0.3px;
             cursor:pointer;
-          ">⚡${zIdx+1} <span style="font-size:9px;opacity:0.75">${z.startKm.toFixed(0)}km</span></div>`,
+          ">⚡<span style="font-size:12px">${z.startKm.toFixed(0)}km</span></div>`,
           iconSize: [null, null],
           iconAnchor: [0, 0]
         }),
