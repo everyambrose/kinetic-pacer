@@ -786,7 +786,8 @@ function generateStrategy() {
     const up = b.type === 'UPHILL', dn = b.type === 'DOWN';
     const isFirst  = bIdx === 0;
     const isCutoff = b.startKm >= _cutKm;
-    const terrainCol = up ? '#f97316' : dn ? '#38bdf8' : '#3ddc84';
+    /* v10.32: FLAT 지형색 흔색 — 경로(녹색)과 명확히 구분 */
+    const terrainCol = up ? '#f97316' : dn ? '#38bdf8' : '#e2e8f0';
     const mid    = b.mid    || bPts[Math.floor(bPts.length / 2)];
     const midIdx = (b.midIdx != null) ? b.midIdx : gPts.indexOf(mid);
     const popupHtml = b.popupHtml || '';
@@ -813,31 +814,25 @@ function generateStrategy() {
     }
   });
 
-  /* v10.31: 레이스 방향 화살표 — 전체 경로에 일정 간격으로 방향 표시 */
+  /* v10.32: 화살표 — 삼각형+꼬리 조합으로 실제 화살표 모양 */
   (function renderArrows() {
-    const ARROW_INTERVAL_KM = Math.max(3, totalK * 0.06); /* ~6% 간격 */
+    const ARROW_INTERVAL_KM = Math.max(3, totalK * 0.06);
     let nextArrowKm = ARROW_INTERVAL_KM;
     for (let i = 1; i < gPts.length; i++) {
       const p = gPts[i], pr = gPts[i - 1];
       if (p.distKm < nextArrowKm) continue;
       nextArrowKm += ARROW_INTERVAL_KM;
-      /* bearing 계산 */
       const dLat = p.lat - pr.lat, dLon = p.lon - pr.lon;
       const angle = Math.atan2(dLon, dLat) * 180 / Math.PI;
       L.marker([p.lat, p.lon], {
         icon: L.divIcon({
           className: '',
-          html: `<div style="
-            width:0;height:0;
-            border-left:5px solid transparent;
-            border-right:5px solid transparent;
-            border-bottom:11px solid rgba(255,255,255,0.55);
-            transform:rotate(${angle}deg);
-            transform-origin:center center;
-            filter:drop-shadow(0 1px 3px rgba(0,0,0,0.7));
-          "></div>`,
-          iconSize: [10, 11],
-          iconAnchor: [5, 5.5]
+          html: `<div style="transform:rotate(${angle}deg);transform-origin:center;display:flex;flex-direction:column;align-items:center;gap:0;filter:drop-shadow(0 1px 3px rgba(0,0,0,0.8))">
+            <div style="width:0;height:0;border-left:3.5px solid transparent;border-right:3.5px solid transparent;border-bottom:10px solid rgba(255,255,255,0.7)"></div>
+            <div style="width:1.5px;height:7px;background:rgba(255,255,255,0.7);margin-top:-1px"></div>
+          </div>`,
+          iconSize: [7, 17],
+          iconAnchor: [3.5, 8.5]
         }),
         interactive: false
       }).addTo(markerGroup);
@@ -925,13 +920,24 @@ function generateStrategy() {
   _pendingCircles.forEach(({ mid, midIdx, bPts, terrainCol, popupHtml }) => {
     const tooClose = supplyKmSet.some(skm => Math.abs(mid.distKm - skm) < CIRCLE_SUPPLY_GAP);
     if (tooClose) return;
-    L.circleMarker([mid.lat, mid.lon], {
-      radius: 7, color: '#fff', weight: 1.5,
-      fillColor: terrainCol, fillOpacity: 1.0
+    const kmLabel = mid.distKm != null ? mid.distKm.toFixed(0) + 'km' : '';
+    const isDark = terrainCol === '#e2e8f0'; /* FLAT 지형은 어두운 텍스트 */
+    const txtCol = isDark ? '#111' : '#fff';
+    /* v10.32: 원형 + km 레이블 콤포지트 divIcon */
+    L.marker([mid.lat, mid.lon], {
+      icon: L.divIcon({
+        className: '',
+        html: `<div style="display:flex;flex-direction:column;align-items:center;transform:translate(-50%,-50%)">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:700;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,0.9);line-height:1;margin-bottom:2px;white-space:nowrap">${kmLabel}</div>
+          <div style="width:13px;height:13px;border-radius:50%;background:${terrainCol};border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.6);cursor:pointer"></div>
+        </div>`,
+        iconSize: [null, null],
+        iconAnchor: [0, 0]
+      }),
+      zIndexOffset: 500
     }).on('click', (e) => {
       if (midIdx >= 0) { selectedIndex = midIdx; chart.update(); }
       if (highlightLayer) { markerGroup.removeLayer(highlightLayer); highlightLayer = null; }
-      /* v10.31: 클릭 시 지형색 하이라이트 */
       highlightLayer = L.polyline(bPts.map(p => [p.lat, p.lon]), {
         color: terrainCol, weight: 8, opacity: 0.65, lineCap: 'round', lineJoin: 'round'
       }).addTo(markerGroup);
