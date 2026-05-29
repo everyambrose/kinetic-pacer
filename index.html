@@ -792,21 +792,25 @@ function generateStrategy() {
     const midIdx = (b.midIdx != null) ? b.midIdx : gPts.indexOf(mid);
     const popupHtml = b.popupHtml || '';
 
-    /* v10.31: 경로 단색 — 크림/낮은 녹색으로 통일 */
+    /* v10.35: 다크 할로 (아래) + 녹색 경로 (위) — 어떤 배경에서도 선명 */
     L.polyline(bPts.map(p => [p.lat, p.lon]), {
-      color: '#4ade80', weight: 3.5, opacity: 0.75
+      color: '#000000', weight: 8, opacity: 0.38,
+      lineCap: 'round', lineJoin: 'round', interactive: false
+    }).addTo(markerGroup);
+    L.polyline(bPts.map(p => [p.lat, p.lon]), {
+      color: '#4ade80', weight: 4.5, opacity: 0.92
     }).on('click', (e) => {
       if (midIdx >= 0) { selectedIndex = midIdx; chart.update(); }
       if (highlightLayer) { markerGroup.removeLayer(highlightLayer); highlightLayer = null; }
-      /* v10.31: 클릭 시 지형 색으로 하이라이트 */
       highlightLayer = L.polyline(bPts.map(p => [p.lat, p.lon]), {
-        color: terrainCol, weight: 8, opacity: 0.65, lineCap: 'round', lineJoin: 'round'
+        color: terrainCol, weight: 9, opacity: 0.7, lineCap: 'round', lineJoin: 'round'
       }).addTo(markerGroup);
       L.popup().setLatLng(e.latlng).setContent(popupHtml).openOn(lMap);
       lMap.once('popupclose', () => {
         if (highlightLayer) { markerGroup.removeLayer(highlightLayer); highlightLayer = null; }
       });
     }).addTo(markerGroup);
+
 
     /* v10.30: 원형 마커 데이터를 배열에 보관 */
     if (!isFirst && !isCutoff && mid) {
@@ -1005,10 +1009,13 @@ function generateStrategy() {
       });
     };
 
-    /* v10.33: 얼은 골드 폴리라인으로 보급 구간 표시 복원 */
+    /* v10.35: 보급 구간 폴리라인 할로 + 골드 */
     L.polyline(zPts.map(p => [p.lat, p.lon]), {
-      color: '#fbbf24', weight: 3, opacity: 0.55,
-      dashArray: null
+      color: '#000', weight: 7, opacity: 0.35,
+      lineCap: 'round', lineJoin: 'round', interactive: false
+    }).addTo(markerGroup);
+    L.polyline(zPts.map(p => [p.lat, p.lon]), {
+      color: '#fbbf24', weight: 4, opacity: 0.75
     }).addTo(markerGroup);
 
     /* v10.34: 구간 시작점에 가장 가까운 GPS 포인트 탐색 (zPts[0] 대신) */
