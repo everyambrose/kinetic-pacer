@@ -983,7 +983,7 @@ function generateStrategy() {
       `<span style="background:${terrainCol};color:#fff;font-size:9px;font-weight:700;padding:2px 7px;border-radius:4px">${terrainLabel}</span>` +
       `<span style="font-size:10px;color:#888">${zBlock ? zBlock.startKm.toFixed(1)+'~'+zBlock.endKm.toFixed(1)+'km' : ''}</span></div>` +
       `<b style="font-size:13px">⚡ 보급 #${zIdx+1}</b>` +
-      `<div style="font-size:10px;color:#666;margin-bottom:5px">${z.startKm.toFixed(1)} ~ ${z.endKm.toFixed(1)}km 구간</div>` +
+      `<div style="font-size:10px;color:#666;margin-bottom:5px">${Math.floor(z.startKm)} ~ ${Math.ceil(z.endKm)}km 구간</div>` +
       `<hr style="border:none;border-top:1px solid #ddd;margin:5px 0">` +
       `<div style="font-size:26px;font-weight:900;color:#d97706;line-height:1.1">${Math.round(zCarb)}g</div>` +
       `<div style="font-size:10px;color:#888;margin-bottom:5px">탄수화물 — 젤·CP 조합으로 채우세요</div>` +
@@ -1011,9 +1011,13 @@ function generateStrategy() {
       dashArray: null
     }).addTo(markerGroup);
 
-    /* v10.33: 슬림 글로우 필 디자인 뼋지 마커 */
-    if (zPts[0]) {
-      L.marker([zPts[0].lat, zPts[0].lon], {
+    /* v10.34: 구간 시작점에 가장 가까운 GPS 포인트 탐색 (zPts[0] 대신) */
+    const zStartPt = gPts.reduce((a, p) =>
+      Math.abs(p.distKm - z.startKm) < Math.abs(a.distKm - z.startKm) ? p : a, gPts[0]);
+    const zKmLabel = Math.floor(z.startKm); /* 내림: 10.6km → "10km" */
+
+    if (zStartPt) {
+      L.marker([zStartPt.lat, zStartPt.lon], {
         icon: L.divIcon({
           className: '',
           html: `<div style="
@@ -1031,7 +1035,7 @@ function generateStrategy() {
             backdrop-filter:blur(3px);
             cursor:pointer;
             letter-spacing:0.5px;
-          "><span style="font-size:13px">⚡</span>${z.startKm.toFixed(0)}km</div>`,
+          "><span style="font-size:13px">⚡</span>${zKmLabel}km</div>`,
           iconSize: [null, null],
           iconAnchor: [0, 0]
         }),
@@ -1041,6 +1045,7 @@ function generateStrategy() {
       .bindPopup(zPop, { maxWidth: 220 })
       .addTo(markerGroup);
     }
+
   });
 
 
