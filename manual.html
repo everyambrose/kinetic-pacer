@@ -7,16 +7,14 @@
 <title>KINETIC PACER — 사용 가이드</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#05070a;--surf:#0c1017;--surf2:#161b22;--border:#2a3140;--text:#c9d1d9;--muted:#6e7a88;--green:#3ddc84;--orange:#f97316;--gold:#fbbf24;--blue:#38bdf8;--red:#fb7185;}
+:root{--bg:#05070a;--surf:#0c1017;--surf2:#161b22;--border:#2a3140;--text:#c9d1d9;--muted:#6e7a88;--green:#4ade80;--orange:#f97316;--gold:#fbbf24;--blue:#38bdf8;--red:#fb7185;}
 *{box-sizing:border-box;margin:0;padding:0;}
 body{background:var(--bg);color:var(--text);font-family:'IBM Plex Mono',monospace;line-height:1.7;}
 a{color:var(--green);text-decoration:none;}
-/* HEADER */
 .hdr{position:sticky;top:0;z-index:99;background:rgba(5,7,10,.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;}
-.logo{font-family:'Inter',sans-serif;font-weight:900;font-size:18px;background:linear-gradient(90deg,#f97316,#3ddc84);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.logo{font-family:'Inter',sans-serif;font-weight:900;font-size:18px;background:linear-gradient(90deg,#f97316,#4ade80);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
 .back{font-size:12px;font-weight:700;color:var(--green);border:1px solid var(--green);padding:5px 12px;border-radius:5px;}
 .back:hover{background:var(--green);color:#000;}
-/* HERO */
 .hero{padding:56px 24px 40px;max-width:800px;margin:0 auto;border-bottom:1px solid var(--border);}
 .hero-tag{font-size:11px;font-weight:700;letter-spacing:3px;color:var(--orange);text-transform:uppercase;margin-bottom:12px;}
 .hero-title{font-family:'Inter',sans-serif;font-size:clamp(32px,8vw,58px);font-weight:900;letter-spacing:-2px;color:#fff;line-height:1;margin-bottom:16px;}
@@ -24,17 +22,15 @@ a{color:var(--green);text-decoration:none;}
 .hero-sub{font-size:13px;color:var(--muted);max-width:560px;line-height:1.9;}
 .tags{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px;}
 .tag{font-size:10px;font-weight:700;letter-spacing:.5px;padding:3px 9px;border-radius:4px;border:1px solid;}
-.tag-g{color:var(--green);border-color:var(--green);background:rgba(61,220,132,.08);}
+.tag-g{color:var(--green);border-color:var(--green);background:rgba(74,222,128,.08);}
 .tag-o{color:var(--orange);border-color:var(--orange);background:rgba(249,115,22,.08);}
 .tag-b{color:var(--blue);border-color:var(--blue);background:rgba(56,189,248,.08);}
 .tag-y{color:var(--gold);border-color:var(--gold);background:rgba(251,191,36,.08);}
-/* MAIN */
 .main{max-width:800px;margin:0 auto;padding:0 24px 80px;}
 .sec{padding:52px 0;border-bottom:1px solid var(--border);}
 .sec:last-child{border-bottom:none;}
 .sec-eyebrow{font-size:10px;font-weight:700;letter-spacing:3px;color:var(--muted);text-transform:uppercase;margin-bottom:8px;}
 .sec-title{font-family:'Inter',sans-serif;font-size:clamp(22px,5vw,32px);font-weight:900;color:#fff;letter-spacing:-1px;margin-bottom:24px;}
-/* STEP */
 .steps{display:flex;flex-direction:column;gap:14px;}
 .step{background:var(--surf2);border:1px solid var(--border);border-radius:12px;padding:18px 20px;display:flex;gap:18px;align-items:flex-start;}
 .sn{font-family:'Inter',sans-serif;font-size:26px;font-weight:900;color:var(--green);line-height:1;flex-shrink:0;width:32px;}
@@ -42,13 +38,23 @@ a{color:var(--green);text-decoration:none;}
 .sd{font-size:12px;color:var(--muted);line-height:1.8;}
 .sd b{color:var(--text);}
 code{background:var(--surf);border:1px solid var(--border);border-radius:4px;padding:1px 6px;font-size:11px;color:var(--green);}
-/* MAP GUIDE */
 .mapguide{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px;}
 .mg{background:var(--surf2);border:1px solid var(--border);border-radius:10px;padding:16px;}
 .mg-dot{width:14px;height:14px;border-radius:50%;display:inline-block;margin-right:8px;vertical-align:middle;flex-shrink:0;}
 .mg-title{font-size:13px;font-weight:700;color:#fff;margin-bottom:8px;display:flex;align-items:center;}
 .mg-body{font-size:11px;color:var(--muted);line-height:1.8;}
 .mg-body b{color:var(--text);}
+/* MARKER BADGE */
+.badge{display:inline-flex;align-items:center;gap:5px;border-radius:20px;padding:3px 9px;font-size:11px;font-weight:800;white-space:nowrap;font-family:'IBM Plex Mono',monospace;}
+.badge-gold{background:rgba(0,0,0,0.55);color:#fbbf24;border:1.5px solid #fbbf24;box-shadow:0 0 8px rgba(251,191,36,0.3);}
+.badge-pink{background:rgba(251,113,133,0.12);color:#fb7185;border:1px solid #fb7185;}
+/* ROUTE DEMO */
+.route-demo{display:flex;align-items:center;gap:8px;margin:6px 0;}
+.route-line{height:5px;width:48px;border-radius:3px;position:relative;}
+.route-line::before{content:'';position:absolute;top:-2px;left:0;right:0;height:9px;border-radius:5px;background:rgba(0,0,0,0.4);}
+.route-line::after{content:'';position:absolute;top:0;left:0;right:0;height:5px;border-radius:3px;}
+.rl-green::after{background:#4ade80;}
+.rl-gold::after{background:#fbbf24;}
 /* FAQ */
 .faq-item{border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:10px;}
 .faq-q{padding:15px 18px;font-size:14px;font-weight:700;color:#fff;cursor:pointer;background:var(--surf2);display:flex;justify-content:space-between;align-items:center;transition:.2s;}
@@ -58,24 +64,21 @@ code{background:var(--surf);border:1px solid var(--border);border-radius:4px;pad
 .faq-a{display:none;padding:15px 18px;font-size:12px;color:var(--muted);line-height:1.9;border-top:1px solid var(--border);background:var(--surf);}
 .faq-a.open{display:block;}
 .faq-a b{color:var(--text);}
-/* CALLOUT */
 .callout{border-radius:10px;padding:14px 18px;display:flex;gap:12px;align-items:flex-start;margin:20px 0;}
-.ct{background:rgba(61,220,132,.07);border:1px solid rgba(61,220,132,.3);}
+.ct{background:rgba(74,222,128,.07);border:1px solid rgba(74,222,128,.3);}
 .cw{background:rgba(251,113,133,.07);border:1px solid rgba(251,113,133,.3);}
 .ci{background:rgba(56,189,248,.07);border:1px solid rgba(56,189,248,.3);}
 .c-icon{font-size:16px;flex-shrink:0;}
 .c-text{font-size:12px;color:var(--text);line-height:1.8;}
 .c-text b{color:#fff;}
-/* HIGHLIGHT ROW */
 .hrow{display:flex;gap:14px;padding:14px 0;border-bottom:1px solid rgba(42,49,64,.5);align-items:flex-start;}
 .hrow:last-child{border-bottom:none;}
 .hi{font-size:22px;width:32px;text-align:center;flex-shrink:0;}
 .hl{font-size:13px;font-weight:700;color:#fff;min-width:110px;}
 .hd{font-size:12px;color:var(--muted);flex:1;line-height:1.7;}
 .hd b{color:var(--text);}
-/* FOOTER */
 footer{border-top:1px solid var(--border);padding:28px 24px;text-align:center;}
-.flogo{font-family:'Inter',sans-serif;font-weight:900;font-size:14px;background:linear-gradient(90deg,#f97316,#3ddc84);-webkit-background-clip:text;-webkit-text-fill-color:transparent;display:inline-block;margin-bottom:6px;}
+.flogo{font-family:'Inter',sans-serif;font-weight:900;font-size:14px;background:linear-gradient(90deg,#f97316,#4ade80);-webkit-background-clip:text;-webkit-text-fill-color:transparent;display:inline-block;margin-bottom:6px;}
 .fcopy{font-size:10px;color:var(--muted);}
 .scr-wrap{border-radius:14px;overflow:hidden;border:1px solid var(--border);box-shadow:0 8px 32px rgba(0,0,0,.5);margin:20px 0;}
 .scr-wrap img{width:100%;height:auto;display:block;}
@@ -97,7 +100,7 @@ footer{border-top:1px solid var(--border);padding:28px 24px;text-align:center;}
 </header>
 
 <div class="hero">
-  <div class="hero-tag">사용 가이드 · v10.29</div>
+  <div class="hero-tag">사용 가이드 · v10.35</div>
   <h1 class="hero-title">KINETIC<br><span>PACER</span></h1>
   <p class="hero-sub">GPX 코스 + 목표 시간만 넣으면, <b style="color:#fff">언제 뭘 얼마나 먹을지</b>를 자동으로 계산해주는 트레일 러닝 보급 전략 도구입니다.</p>
   <div class="tags">
@@ -110,7 +113,7 @@ footer{border-top:1px solid var(--border);padding:28px 24px;text-align:center;}
 
 <main class="main">
 
-  <!-- QUICKSTART -->
+  <!-- 01 QUICKSTART -->
   <section class="sec" id="quickstart">
     <div class="sec-eyebrow">01 · Quick Start</div>
     <h2 class="sec-title">5분 안에 전략 완성</h2>
@@ -120,149 +123,179 @@ footer{border-top:1px solid var(--border);padding:28px 24px;text-align:center;}
         <div class="sn">1</div>
         <div>
           <div class="st">GPX 파일 업로드</div>
-          <div class="sd">대회 공식 홈페이지 또는 <b>Strava·Garmin Connect·Komoot</b>에서 GPX 다운로드 → <code>01 GPX COURSE SOURCE</code>에서 선택. 코스가 지도에 자동으로 그려집니다.</div>
+          <div class="sd">대회 공식 홈페이지 또는 <b>Strava · Garmin Connect · Komoot</b>에서 GPX 다운로드 → <code>01 GPX COURSE SOURCE</code>에서 선택. 코스가 지도에 자동으로 그려집니다.</div>
         </div>
       </div>
       <div class="step">
         <div class="sn">2</div>
         <div>
           <div class="st">목표 완주 시간 입력</div>
-          <div class="sd"><code>02 TARGET FINISH TIME</code>에 HRS·MIN·SEC 입력. 입력 즉시 사이드바 예상 보급량이 실시간 업데이트됩니다.</div>
+          <div class="sd"><code>02 TARGET FINISH TIME</code>에 HRS · MIN · SEC 입력. 입력 즉시 예상 보급량이 실시간 업데이트됩니다.</div>
         </div>
       </div>
       <div class="step">
         <div class="sn">3</div>
         <div>
           <div class="st">신체 정보 입력</div>
-          <div class="sd">체중(KG), 기온, 땀 분비율(SWEAT RATE), 땀 염분(SALTINESS) 설정. <b>처음이라면 기본값 그대로 사용해도 충분합니다.</b></div>
+          <div class="sd">체중(KG) · 기온 · 땀 분비율(SWEAT RATE) · 땀 염분(SALTINESS) 설정. <b>처음이라면 기본값 그대로 사용해도 충분합니다.</b></div>
         </div>
       </div>
       <div class="step">
         <div class="sn">4</div>
         <div>
           <div class="st">GENERATE STRATEGY 클릭</div>
-          <div class="sd">초록색 버튼 클릭 → 지도에 지형별 색상 루트(업힐 🟠·평지 🟢·다운힐 🔵)와 보급 구간(골드 ⚡)이 그려집니다. <b>모바일에서는 자동으로 지도 화면으로 스크롤</b>됩니다.</div>
+          <div class="sd">초록색 버튼 클릭 → 지도에 <b>녹색 경로</b>와 <b>⚡ 골드 보급 뱃지</b>가 그려집니다. 모바일은 자동으로 지도 화면으로 스크롤됩니다.</div>
         </div>
       </div>
       <div class="step">
         <div class="sn">5</div>
         <div>
-          <div class="st">계획 수립 & 내보내기</div>
+          <div class="st">마커 클릭 → 팝업 확인</div>
+          <div class="sd"><b>⚡ 골드 뱃지</b> 또는 <b>지형 원형 마커</b>를 클릭하면 해당 구간이 지형 색으로 하이라이트되고, 탄수화물 · 수분 · 전해질 수치가 팝업으로 표시됩니다.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="sn">6</div>
+        <div>
+          <div class="st">계획 수립 &amp; 내보내기</div>
           <div class="sd">우측 <code>TERRAIN</code> 탭 카드 클릭 → 해당 구간이 지도에서 하이라이트됩니다. <code>EXPORT (TERRAIN)</code>으로 CSV 저장 후 레이스 노트로 활용하세요.</div>
         </div>
       </div>
     </div>
 
-    <!-- SCREENSHOT -->
     <div class="scr-wrap" style="margin-top:28px">
-      <img src="images/kp_main_screen.png" alt="Kinetic Pacer 메인 화면 예시" loading="lazy">
-      <div class="scr-caption"><b>앱 메인 화면</b> — 좌측 입력 패널 + 우측 지형 색상 맵 + 하단 고도 차트</div>
+      <img src="images/kp_v1035_map.png" alt="Kinetic Pacer v10.35 지도 화면" loading="lazy">
+      <div class="scr-caption"><b>v10.35 지도 화면</b> — 녹색 경로(다크 할로) · 지형 원형 마커 · ⚡ 골드 보급 뱃지 · ⏱ LAST SUPPLY 태그 · 방향 화살표</div>
     </div>
   </section>
 
-  <!-- MAP GUIDE -->
+  <!-- 02 MAP GUIDE -->
   <section class="sec" id="map">
     <div class="sec-eyebrow">02 · Map Guide</div>
-    <h2 class="sec-title">지도 색깔 읽는 법</h2>
+    <h2 class="sec-title">지도 읽는 법</h2>
 
     <div class="mapguide">
       <div class="mg">
-        <div class="mg-title"><span class="mg-dot" style="background:#f97316"></span>🔺 오렌지 구간</div>
-        <div class="mg-body"><b>UPHILL</b><br>상승 구간. 에너지 소모가 평지의 최대 2.5배. 오르막 <b>진입 전 보급이 핵심</b>입니다.</div>
+        <div class="mg-title">
+          <div class="route-line rl-green" style="width:36px;height:5px;border-radius:3px;background:#4ade80;box-shadow:0 0 0 3px rgba(0,0,0,0.4);margin-right:10px;flex-shrink:0"></div>
+          녹색 경로
+        </div>
+        <div class="mg-body">전체 코스 루트. <b>다크 외곽선(할로)</b>이 적용되어 어떤 지도 배경에서도 선명하게 표시됩니다. 방향 화살표(▲ 금색)로 진행 방향을 확인하세요.</div>
       </div>
       <div class="mg">
-        <div class="mg-title"><span class="mg-dot" style="background:#3ddc84;box-shadow:0 0 6px rgba(61,220,132,.5)"></span>➡️ 녹색 구간</div>
-        <div class="mg-body"><b>FLAT</b><br>평지 구간. 안정적인 페이스. 젤 인터벌에 맞춰 꾸준히 보급하세요.</div>
+        <div class="mg-title">
+          <span class="mg-dot" style="background:#f97316;border:2px solid #fff;margin-right:8px"></span>
+          🔺 오렌지 마커 · km
+        </div>
+        <div class="mg-body"><b>UPHILL 구간</b><br>상승 구간 중간에 표시. 에너지 소모 최대 2.5배. <b>오르막 진입 전 보급이 핵심.</b> 클릭하면 해당 업힐 전체가 오렌지색으로 강조됩니다.</div>
       </div>
       <div class="mg">
-        <div class="mg-title"><span class="mg-dot" style="background:#38bdf8"></span>🔽 블루 구간</div>
-        <div class="mg-body"><b>DOWNHILL</b><br>하강 구간. 페이스는 빠르지만 <b>에너지는 여전히 소모</b>됩니다. 방심 금물.</div>
+        <div class="mg-title">
+          <span class="mg-dot" style="background:#e2e8f0;border:2px solid #888;margin-right:8px"></span>
+          ⬜ 흰색 마커 · km
+        </div>
+        <div class="mg-body"><b>FLAT 구간</b><br>평지 구간. 안정적인 페이스. 젤 인터벌에 맞춰 꾸준히 보급. 클릭하면 해당 구간이 흰색 하이라이트로 표시됩니다.</div>
       </div>
       <div class="mg">
-        <div class="mg-title"><span class="mg-dot" style="background:#fbbf24"></span>⚡ 골드 마커</div>
-        <div class="mg-body"><b>보급 권장 포인트</b><br>에너지가 임계치 도달. <b>여기서 안 먹으면 보네킹 위험.</b></div>
+        <div class="mg-title">
+          <span class="mg-dot" style="background:#38bdf8;border:2px solid #fff;margin-right:8px"></span>
+          🔽 블루 마커 · km
+        </div>
+        <div class="mg-body"><b>DOWNHILL 구간</b><br>하강 구간. 페이스는 빠르지만 <b>에너지는 여전히 소모</b>됩니다. 클릭하면 해당 구간이 블루로 강조됩니다.</div>
       </div>
       <div class="mg">
-        <div class="mg-title"><span class="mg-dot" style="background:#fb7185"></span>⏱ 핑크 마커</div>
-        <div class="mg-body"><b>LAST SUPPLY — 마지막 보급 지점</b><br>이 이후 섭취는 피니쉬 전 흡수 불가. 여기부터 페이스 집중.</div>
+        <div class="mg-title">
+          <span class="badge badge-gold" style="font-size:10px;padding:2px 7px">⚡ 17km</span>
+        </div>
+        <div class="mg-body"><b>필수 보급 포인트</b><br>에너지 예산이 임계치에 도달하는 지점. <b>여기서 안 먹으면 보네킹 위험.</b> 클릭하면 해당 지형 구간이 색으로 강조되고 탄수화물 · 수분 · 전해질 수치가 표시됩니다.</div>
       </div>
       <div class="mg">
-        <div class="mg-title"><span class="mg-dot" style="background:#fff"></span>흰색 하이라이트</div>
-        <div class="mg-body"><b>선택한 지형 블록</b><br>코스 클릭 또는 TERRAIN 카드 클릭 → 해당 구간이 흰색으로 강조됩니다.</div>
+        <div class="mg-title">
+          <span class="badge badge-pink" style="font-size:10px;padding:2px 7px">⏱ 38km~</span>
+        </div>
+        <div class="mg-body"><b>LAST SUPPLY — 마지막 보급 지점</b><br>이 지점 이후 섭취는 피니쉬 전 흡수 불가. 여기부터는 <b>페이스 집중</b>.</div>
       </div>
     </div>
 
-    <div class="scr-wrap">
-      <img src="images/kp_map_guide.png" alt="지도 색상 가이드" loading="lazy">
-      <div class="scr-caption"><b>지도 색상 가이드</b> — 오렌지(업힐) · 녹색(평지) · 블루(다운힐) · 핑크 마커(LAST SUPPLY)</div>
+    <div class="scr-wrap" style="margin-top:20px">
+      <img src="images/kp_v1035_popup.png" alt="보급 팝업 예시" loading="lazy">
+      <div class="scr-caption"><b>⚡ 뱃지 클릭 시 팝업</b> — 지형 타입 · km 범위 · 탄수화물(g) · 수분(ml) · 전해질(mg) 표시. 해당 지형 구간이 색으로 하이라이트됩니다.</div>
     </div>
 
-    <div class="callout ct" style="margin-top:20px">
+    <div class="callout ct" style="margin-top:4px">
       <span class="c-icon">💡</span>
-      <div class="c-text"><b>팁:</b> 골드 마킹 외 구간에서도 꾸준히 먹어야 합니다. <b>GEL 인터벌(km)마다 젤 1개</b>씩 섭취하는 것이 기본 원칙입니다. 골드 마킹은 "반드시 먹어야 하는 위기 구간"을 표시하는 것이지, 그 외엔 안 먹어도 된다는 의미가 아닙니다.</div>
+      <div class="c-text"><b>핵심 원칙:</b> ⚡ 뱃지는 "반드시 먹어야 하는 위기 구간"입니다. 그 외 구간에서도 <b>GEL 인터벌(km)마다 젤 1개</b>씩 꾸준히 섭취해야 합니다.</div>
     </div>
   </section>
 
-  <!-- NUMBERS -->
+  <!-- 03 NUMBERS -->
   <section class="sec" id="numbers">
     <div class="sec-eyebrow">03 · 숫자 읽는 법</div>
     <h2 class="sec-title">오른쪽 패널 이해하기</h2>
 
     <div class="hrow">
-      <div class="hi">⚡</div>
+      <div class="hi">🍚</div>
       <div class="hl" style="color:var(--orange)">PRE-START LOADING</div>
-      <div class="hd">출발 2~3시간 전에 미리 먹어야 할 탄수화물. <b>레이스 중 흡수 한계(85g/hr)를 초과하는 부족분</b>을 미리 채우는 것. 탄수화물 음식(밥·떡·에너지바)으로 섭취하세요.</div>
+      <div class="hd">출발 <b>2~3시간 전</b>에 미리 먹어야 할 탄수화물. 레이스 중 흡수 한계(85g/hr)를 초과하는 부족분을 미리 채우는 것. 흰쌀밥 · 떡 · 에너지바로 섭취하세요.<br><b>흰쌀밥 1공기 ≒ 55g / 바나나 1개 ≒ 27g / 에너지바 1개 ≒ 40g</b></div>
     </div>
     <div class="hrow">
-      <div class="hi">🗺</div>
-      <div class="hl" style="color:var(--gold)">보급 구간 팝업</div>
-      <div class="hd">⚡ 마커 또는 루트 클릭 시 표시. <b>이 구간에서 소모되는 탄수화물(g)·수분(ml)·전해질(mg)</b>을 보여줍니다. 젤과 CP 음식을 조합해 채우세요.</div>
+      <div class="hi">⚡</div>
+      <div class="hl" style="color:var(--gold)">보급 뱃지 팝업</div>
+      <div class="hd">⚡ Nkm 뱃지 클릭 시 표시. <b>해당 보급 구간에서 소모되는 탄수화물(g) · 수분(ml) · 전해질(mg)</b>을 보여줍니다. 젤과 CP 음식을 조합해 채우세요.<br><span style="color:var(--muted)">젤 1개 ≒ 24g / 스포츠음료 500ml ≒ 30g</span></div>
     </div>
     <div class="hrow">
       <div class="hi">📋</div>
       <div class="hl" style="color:var(--text)">TERRAIN 탭</div>
-      <div class="hd">UPHILL·FLAT·DOWN 지형별 블록마다 소모량 표시. <b>카드를 클릭하면 해당 구간이 지도에 하이라이트</b>되고 팝업이 표시됩니다. 지도가 자동으로 해당 위치로 이동합니다.</div>
-    </div>
-
-    <div class="scr-wrap">
-      <img src="images/kp_terrain_panel.png" alt="TERRAIN 탭 예시" loading="lazy">
-      <div class="scr-caption"><b>TERRAIN 탭</b> — 업힐·평지·다운힐 구간별 탄수화물·수분·전해질 소모량. 카드 클릭 시 지도 연동.</div>
+      <div class="hd">UPHILL · FLAT · DOWN 지형별 블록마다 소모량 표시. <b>카드를 클릭하면 해당 구간이 지형 색으로 하이라이트</b>되고 팝업이 표시됩니다. 지도가 자동으로 해당 위치로 이동합니다.</div>
     </div>
     <div class="hrow">
       <div class="hi">⏱</div>
-      <div class="hl" style="color:var(--blue)">ABSORPTION CUTOFF</div>
-      <div class="hd">젤 25분·물 15분·전해질 20분의 흡수 시간을 역산한 <b>마지막 유효 보급 지점</b>. 이후 섭취는 피니쉬 전까지 흡수 완료가 안 됩니다.</div>
+      <div class="hl" style="color:var(--red)">LAST SUPPLY</div>
+      <div class="hd">젤 25분 · 물 15분 · 전해질 20분의 흡수 시간을 역산한 <b>마지막 유효 보급 지점</b>. 지도에 핑크 아웃라인 태그로 표시됩니다. 이후 섭취는 피니쉬 전 흡수 완료가 안 됩니다.</div>
+    </div>
+
+    <div class="scr-wrap" style="margin-top:20px">
+      <img src="images/kp_terrain_panel.png" alt="TERRAIN 탭 예시" loading="lazy">
+      <div class="scr-caption"><b>TERRAIN 탭</b> — 업힐 · 평지 · 다운힐 구간별 탄수화물 · 수분 · 전해질 소모량. 카드 클릭 시 지도 연동 + 지형색 하이라이트.</div>
     </div>
   </section>
 
-  <!-- FAQ -->
+  <!-- 04 FAQ -->
   <section class="sec" id="faq">
     <div class="sec-eyebrow">04 · FAQ</div>
     <h2 class="sec-title">이래서 이런 게 있어요</h2>
 
     <div class="faq-item">
-      <div class="faq-q">Q. 프리로딩이 630g이나 나오는데, 이게 다 밥인가요?</div>
-      <div class="faq-a">출발 <b>2~3시간 전 식사로 탄수화물을 미리 저장</b>하는 개념입니다. 흰쌀밥 1공기 ≒ 55g, 바나나 1개 ≒ 27g, 에너지바 1개 ≒ 40g 수준이니 계산해서 조합하세요. 100km 이상 울트라에서는 600g 이상도 정상 수치입니다.</div>
+      <div class="faq-q">Q. 경로가 녹색 하나인데, 지형은 어떻게 구분하나요?</div>
+      <div class="faq-a">경로 자체는 <b>녹색 단색</b>으로 통일됩니다. 지형 구분은 경로 위의 <b>원형 마커</b>로 합니다 — 🟠 오렌지(업힐) · ⬜ 흰색(평지) · 🔵 블루(다운힐). 마커를 클릭하거나 우측 TERRAIN 탭 카드를 클릭하면 해당 지형 구간이 지형 색으로 강조됩니다.</div>
     </div>
     <div class="faq-item">
-      <div class="faq-q">Q. 골드 보급 구간에서 반드시 젤을 먹어야 하나요?</div>
-      <div class="faq-a">젤이 가장 빠르지만 <b>CP 음식, 스포츠 음료, 과일 등 탄수화물이면 무엇이든 됩니다.</b> 팝업에 표시된 CHO(g) 수치를 채우는 것이 목표입니다. 젤 1개 ≒ 24g 기준으로 계산하세요.</div>
+      <div class="faq-q">Q. ⚡ 뱃지 숫자가 "17km"인데, 이게 구간 시작점인가요?</div>
+      <div class="faq-a">네. <b>보급을 시작해야 하는 km 지점</b>입니다. 뱃지는 해당 km에 가장 가까운 GPS 포인트에 정확히 배치됩니다. 클릭하면 팝업에 전체 구간 범위(예: 17~20km)가 표시됩니다.</div>
     </div>
     <div class="faq-item">
       <div class="faq-q">Q. 보급 마킹이 4개뿐인데 전체 필요량과 차이가 납니다.</div>
-      <div class="faq-a">보급 마킹은 <b>에너지가 위험 수준으로 떨어지는 구간</b>을 표시합니다. 마킹 외 구간에서도 GEL 인터벌마다 꾸준히 먹어야 합니다. 전체 필요량(예: 595g) = 프리로딩 + 마킹 구간 + <b>그 사이사이에 섭취하는 양</b>을 모두 합친 것입니다.</div>
-    </div>
-    <div class="faq-item">
-      <div class="faq-q">Q. 지형마다 색이 다른데 무슨 의미인가요?</div>
-      <div class="faq-a">v10.29부터 루트가 <b>오렌지(업힐)·녹색(평지)·블루(다운힐)</b>으로 구분됩니다. 색상만 봐도 어디가 힘든 구간인지 바로 파악할 수 있습니다. 지형 구간 중간의 원형 마커를 클릭하거나, 우측 TERRAIN 탭 카드를 클릭하면 해당 구간이 지도에 강조 표시됩니다.</div>
+      <div class="faq-a">⚡ 마킹은 <b>에너지가 위험 수준으로 떨어지는 구간</b>만 표시합니다. 마킹 외 구간에서도 GEL 인터벌마다 꾸준히 먹어야 합니다. 전체 필요량(예: 595g) = 프리로딩 + 마킹 구간 + <b>그 사이사이 섭취분</b> 모두 합친 것입니다.</div>
     </div>
     <div class="faq-item">
       <div class="faq-q">Q. 업힐에서 보급 마킹이 안 보이는데 먹지 않아도 되나요?</div>
-      <div class="faq-a">아닙니다. <b>업힐은 에너지 소모가 가장 큰 구간</b>입니다. 보급 마킹은 업힐 직전 평지·다운힐에 표시되는 경우가 많습니다. 오르막 시작 전에 미리 먹어두는 것이 전략의 핵심입니다.</div>
+      <div class="faq-a">아닙니다. <b>업힐은 에너지 소모가 가장 큰 구간</b>입니다. 보급 마킹은 업힐 <b>직전</b> 평지 · 다운힐에 표시되는 경우가 많습니다. 오르막 진입 전에 미리 먹어두는 것이 전략의 핵심입니다.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">Q. 프리로딩이 600g이나 나오는데, 이게 다 밥인가요?</div>
+      <div class="faq-a">출발 2~3시간 전 식사로 탄수화물을 미리 저장하는 개념입니다. 흰쌀밥 1공기(≒55g) · 바나나(≒27g) · 에너지바(≒40g)를 조합하세요. <b>100km 이상 울트라에서는 600g 이상도 정상 수치</b>입니다.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">Q. ⏱ LAST SUPPLY 이후에는 정말 아무것도 먹지 말아야 하나요?</div>
+      <div class="faq-a">피니쉬까지 흡수가 완료되지 않으므로 <b>효과가 없습니다</b>. 단, 입이 너무 마르거나 물이 필요하다면 소량의 수분은 괜찮습니다. 에너지 보충이 목적인 젤 · 음식은 LAST SUPPLY 이전에 마무리하세요.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">Q. 골드 뱃지 외에 원형 마커를 왜 클릭하나요?</div>
+      <div class="faq-a">원형 마커를 클릭하면 해당 <b>지형 블록(업힐/평지/다운힐) 전체</b>가 하이라이트됩니다. "이 오르막 구간이 얼마나 긴지, 얼마나 소모되는지"를 파악하는 데 사용하세요. 보급 전략을 짤 때 지형 마커와 ⚡ 뱃지를 함께 활용하면 효과적입니다.</div>
     </div>
     <div class="faq-item">
       <div class="faq-q">Q. 계산값을 100% 믿어도 되나요?</div>
-      <div class="faq-a">학술 논문 기반의 합리적 추정치지만 <b>개인차가 있습니다.</b> 레이스 전 장거리 훈련에서 반드시 동일 전략을 테스트하세요. 위장 내성, 젤 종류, 수분 반응은 개인마다 다릅니다.</div>
+      <div class="faq-a">학술 논문 기반의 합리적 추정치지만 <b>개인차가 있습니다.</b> 레이스 전 장거리 훈련에서 반드시 동일 전략을 테스트하세요. 위장 내성 · 젤 종류 · 수분 반응은 개인마다 다릅니다.</div>
     </div>
     <div class="faq-item">
       <div class="faq-q">Q. 내 데이터가 저장·전송되나요?</div>
@@ -270,7 +303,7 @@ footer{border-top:1px solid var(--border);padding:28px 24px;text-align:center;}
     </div>
     <div class="faq-item">
       <div class="faq-q">Q. GPX 파일은 어디서 구하나요?</div>
-      <div class="faq-a">대회 공식 홈페이지 코스 페이지, 또는 <b>Strava·Garmin Connect·Komoot</b>에서 다운로드할 수 있습니다. 없다면 Strava 루트 탐색기에서 직접 그릴 수도 있습니다.</div>
+      <div class="faq-a">대회 공식 홈페이지, 또는 <b>Strava · Garmin Connect · Komoot</b>에서 다운로드할 수 있습니다. 없다면 Strava 루트 탐색기에서 직접 그릴 수도 있습니다.</div>
     </div>
 
     <div class="callout cw" style="margin-top:24px">
@@ -279,13 +312,13 @@ footer{border-top:1px solid var(--border);padding:28px 24px;text-align:center;}
     </div>
   </section>
 
-  <!-- SCIENCE -->
+  <!-- 05 SCIENCE -->
   <section class="sec" id="science">
     <div class="sec-eyebrow">05 · Science</div>
     <h2 class="sec-title">왜 이 수치인가요?</h2>
-    <div class="hrow"><div class="hi">📐</div><div class="hl">Minetti 2002</div><div class="hd">경사도별 에너지 소비 공식(GAP factor). 업힐은 평지보다 최대 2.5배 많은 에너지를 소모합니다.</div></div>
-    <div class="hrow"><div class="hi">🧬</div><div class="hl">Jeukendrup 2014</div><div class="hd">탄수화물 흡수 한계 85g/hr (젤+음료 혼합 시). 이 이상 먹어도 흡수 안 됩니다.</div></div>
-    <div class="hrow"><div class="hi">💧</div><div class="hl">Sawka 2007</div><div class="hd">ACSM 수분 섭취 가이드라인. 기온·체중·발한량 기반 시간당 수분 필요량 계산.</div></div>
+    <div class="hrow"><div class="hi">📐</div><div class="hl">Minetti 2002</div><div class="hd">경사도별 에너지 소비 공식(GAP factor). 업힐은 평지보다 최대 2.5배 많은 에너지를 소모합니다. 보급 마킹 위치 계산에 적용됩니다.</div></div>
+    <div class="hrow"><div class="hi">🧬</div><div class="hl">Jeukendrup 2014</div><div class="hd">탄수화물 흡수 한계 85g/hr (젤+음료 혼합 시). 이 이상 먹어도 흡수가 안 됩니다. PRE-LOADING 필요량의 근거입니다.</div></div>
+    <div class="hrow"><div class="hi">💧</div><div class="hl">Sawka 2007</div><div class="hd">ACSM 수분 섭취 가이드라인. 기온 · 체중 · 발한량 기반 시간당 수분 필요량 계산.</div></div>
     <div class="hrow"><div class="hi">🧂</div><div class="hl">Baker 2017</div><div class="hd">땀의 나트륨 농도 개인차 연구. 300~1800mg/L 범위, SALTINESS LV.1~10 스케일 기준.</div></div>
   </section>
 
